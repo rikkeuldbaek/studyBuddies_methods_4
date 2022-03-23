@@ -7,6 +7,8 @@ editor_options:
     wrap: 72
 ---
 
+EMMA WAS HERE
+
 -   *Type:* Group assignment
 -   *Due:* 3 April 2022, 23:59
 
@@ -147,10 +149,9 @@ Collider
 impliedConditionalIndependencies(dag_corona)
 
 ```
-test
-    crn_ _||_ grm_ | fc_m, sntz
-    *CF and G are independent of each other if we stratify by both FM and SNTZ)* 
 
+test crn\_ *\|\|* grm\_ \| fc_m, sntz *CF and G are independent of each
+other if we stratify by both FM and SNTZ)*
 
     crn_ _||_ pst_ | grm_
     *If we stratify by G, there is no association between CF and Infection*
