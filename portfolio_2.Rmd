@@ -1,0 +1,169 @@
+---
+title: "Methods 4 -- Portfolio Assignment 2"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+- *Type:* Group assignment
+- *Due:* 3 April 2022, 23:59
+
+Hello CogSci\'s :)
+
+In this portfolio, you are asked to do four tasks:
+
+\- Make a DAG for something
+
+\- Simulate data that fits the DAG
+
+\- Use linear models to confirm that the DAG fits the data
+
+\- Mess it up.
+
+Each of the four tasks have some sub-steps.\
+Report briefly what you find, for example in a markdown document, for
+example called report.md so that the poor TA can easily get an overview
+before looking in your code :)
+
+Then you can also make a (brief!) explanation of the phenomenon you are
+DAGGIN, simulating and modelling.
+
+Looking forward !
+
+## Task 1: The DAG
+
+\- **Come up with an** incredibly interesting and scientifically
+important made-up **example** for a phenomenon to investigate. Decide on
+two variables (an outcome and a predictor) that you would like to
+investigate the relation between. If in doubt, you **can be inspired by
+Peter\'s amazing example** on the next page.
+
+\- **Make a DAG** for the phenomenon. Make it medium complicated: that
+means, make sure there are some different kinds of relations (see next
+step). Change it if you don\'t get anything interesting for the next
+steps.\
+**Draw it** somehow (on paper, in R, laser engraved in diamond).\
+**Code it** in dagitty (this is a nice tool:
+http://dagitty.net/dags.html )
+
+```{r}
+
+pacman::p_load(usethis,dplyr, tidyverse, ggplot2, rstan, dagitty)
+library(rethinking)
+
+#DAG corona
+dag_corona<- dagitty( "dag {
+    Corona_Fear -> Sanitizing
+    Sanitizing-> Germ_Level
+    Face_Mask -> Germ_Level
+    Corona_Fear -> Face_Mask
+    Germ_Level -> Posive_Test
+}")
+
+coordinates(dag_corona) <- list( x=c(Corona_Fear =0,Face_Mask =-1, Sanitizing =0, Germ_Level=-1, Posive_Test= -1) , y=c(Corona_Fear =0,Face_Mask =0, Sanitizing = 1, Germ_Level=1, Posive_Test=2) )
+
+
+drawdag(dag_corona)
+
+```
+
+
+
+\- Find **elemental forms of variable relations** in the DAG
+(i.e., forks, pipes, colliders, and their descendants).
+
+\- Find out **what variables to include (and not include)** in a
+multiple linear regression to avoid \'back door\' (AKA non-causal)
+paths. Do this first with your eyes and your mind. Then you can use
+dagitty\'s function `adjustmentSets()`.
+
+\- Find out which **conditional independencies** the DAG implies. First
+with the mind, then with daggity\'s function
+`impliedConditionalIndependencies()`.
+
+\- Find the full list of **Markov equivalent** DAGS. Use daggity\'s
+function `equivalentGraphs()`.
+
+## Task 2: The data
+
+\- **Simulate some data that fits the DAG.** There are many ways to do
+this. A simple way is just to sample one variable from a normal
+distribution which has another variable as mean. McElreath does this in
+the book a few times, and you can use this as inspiration.
+
+## Task 3: Statistics
+
+\- Run **multiple linear regression**s to **test the conditional
+independencies** **implied by your DAG**. Make sure to avoid backdoor
+paths. See that the linear model shows the conditional independencies
+implied by your DAG, implying that the data and the DAG are compatible
+(if the linear model doesn\'t show the conditional independencies
+implied by the DAG, the data and the DAG doesn\'t fit).
+
+## Task 4: Messing it up
+
+\- Try and **deliberately have an open back door path** and see if you
+can get wrong inference.
+
+\- Try and deliberately **simulate some data that doesn\'t fit the
+DAG**, or **create a new DAG that doesn\'t fit the data**.
+
+\- Use the same approach as above to **show that the DAG is wrong** (by
+showing that conditional independencies don\'t exist in the data, for
+example).
+
+## Peter\'s perfectly optimal and extremely interesting example
+
+*In a galaxy far, far away\...*
+
+*It is a period of civil wars in the galaxy. A brave alliance of
+underground freedom fighters has challenged the tyranny and oppression
+of the awesome GALACTIC EMPIRE.*
+
+*To crush the rebellion once and for all, the EMPIRE is constructing a
+sinister new battle station. Powerful enough to destroy an entire
+planet, its completion spells certain doom for the champions of
+freedom.*
+
+*The evil Emperor has figured out, however, that neither the battle
+station nor the Force can help him avoid that more solar systems join
+the rebellion. He has therefore hired a CogSci student to use causal
+modelling and multiple linear regressions to investigate how the
+activity of the Death Star and other factors affects the probability
+that a given solar system will join the rebellion (this allows him to
+more optimally suppress freedom in the Galaxy).*
+
+*You are that student.*
+
+We assume that the probability of a solar system joining the rebellion depends on\
+- how many rebellion sympathizers there is in the system (more rebels
+-\> higher probability of joining the rebellion)\
+- how scared people are in the system (more scared -\> lower probability
+of joining the rebellion).
+
+How many rebellion sympathizers there is in a system depends on
+
+\- crime levels (less crime -\> less rebellion sympathizers)
+
+\- number of planets recently destroyed by the Death Star (more planets
+destroyed -\> more rebellion sympathizers)
+
+\- number of Jedis in the system (more Jedis -\> more rebellion
+sympathizers)
+
+How scared people are depends on
+
+\- whether or not the Death Star is nearby (nearby -\> more scared)
+
+\- how many jedis are in the system (more Jedis -\> less scared)
+
+\- how much time Darth Vader has spent in the system recently (more time
+-\> more scared)
+
+Crime levels depend on
+
+\- number of planets recently destroyed by the Death Star (more planets
+destroyed -\> less crime)
+
+And so on\....
+
