@@ -1757,7 +1757,7 @@ pre code {
 <li><em>Type:</em> Group assignment</li>
 <li><em>Due:</em> 3 April 2022, 23:59</li>
 </ul>
-<p>Hello CogSci&#39;s :)</p>
+<p>Hello CogSci’s :)</p>
 <p>In this portfolio, you are asked to do four tasks:</p>
 <p>- Make a DAG for something</p>
 <p>- Simulate data that fits the DAG</p>
@@ -1769,55 +1769,130 @@ Report briefly what you find, for example in a markdown document, for example ca
 <p>Looking forward !</p>
 <div id="task-1-the-dag" class="section level2">
 <h2>Task 1: The DAG</h2>
-<p>- <strong>Come up with an</strong> incredibly interesting and scientifically important made-up <strong>example</strong> for a phenomenon to investigate. Decide on two variables (an outcome and a predictor) that you would like to investigate the relation between. If in doubt, you <strong>can be inspired by Peter&#39;s amazing example</strong> on the next page.</p>
-<p>- <strong>Make a DAG</strong> for the phenomenon. Make it medium complicated: that means, make sure there are some different kinds of relations (see next step). Change it if you don&#39;t get anything interesting for the next steps.<br />
+<p>- <strong>Come up with an</strong> incredibly interesting and scientifically important made-up <strong>example</strong> for a phenomenon to investigate. Decide on two variables (an outcome and a predictor) that you would like to investigate the relation between. If in doubt, you <strong>can be inspired by Peter’s amazing example</strong> on the next page.</p>
+<p>In our example, we wish to investigate the effect of corona fear (CF) on the variable Infected (a binary variable taking either the value 0 or 1).</p>
+<p>Predictor: corona fear (continuous variable) Outcome variable: infection (0/1)</p>
+<p>Sanitising: continuous variable FM variable: do you wear face mask according to the national guidelines? (binary variable; 0/1) Germ level: continuous</p>
+<p>- <strong>Make a DAG</strong> for the phenomenon. Make it medium complicated: that means, make sure there are some different kinds of relations (see next step). Change it if you don’t get anything interesting for the next steps.<br />
 <strong>Draw it</strong> somehow (on paper, in R, laser engraved in diamond).<br />
 <strong>Code it</strong> in dagitty (this is a nice tool: <a href="http://dagitty.net/dags.html" class="uri">http://dagitty.net/dags.html</a> )</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxucGFjbWFuOjpwX2xvYWQodXNldGhpcyxkcGx5ciwgdGlkeXZlcnNlLCBnZ3Bsb3QyLCByc3RhbiwgZGFnaXR0eSlcbmxpYnJhcnkocmV0aGlua2luZylcblxuI0RBRyBjb3JvbmFcbmRhZ19jb3JvbmE8LSBkYWdpdHR5KCBcImRhZyB7XG4gICAgQ29yb25hX0ZlYXIgLT4gU2FuaXRpemluZ1xuICAgIFNhbml0aXppbmctPiBHZXJtX0xldmVsXG4gICAgRmFjZV9NYXNrIC0+IEdlcm1fTGV2ZWxcbiAgICBDb3JvbmFfRmVhciAtPiBGYWNlX01hc2tcbiAgICBHZXJtX0xldmVsIC0+IFBvc2l2ZV9UZXN0XG59XCIpXG5cbmNvb3JkaW5hdGVzKGRhZ19jb3JvbmEpIDwtIGxpc3QoIHg9YyhDb3JvbmFfRmVhciA9MCxGYWNlX01hc2sgPS0xLCBTYW5pdGl6aW5nID0wLCBHZXJtX0xldmVsPS0xLCBQb3NpdmVfVGVzdD0gLTEpICwgeT1jKENvcm9uYV9GZWFyID0wLEZhY2VfTWFzayA9MCwgU2FuaXRpemluZyA9IDEsIEdlcm1fTGV2ZWw9MSwgUG9zaXZlX1Rlc3Q9MikgKVxuXG5cbmRyYXdkYWcoZGFnX2Nvcm9uYSlcbmBgYCJ9 -->
-<pre class="r"><code>pacman::p_load(usethis,dplyr, tidyverse, ggplot2, rstan, dagitty)
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuXG5wYWNtYW46OnBfbG9hZCh1c2V0aGlzLGRwbHlyLCB0aWR5dmVyc2UsIGdncGxvdDIsIHJzdGFuLCBkYWdpdHR5LGdnZGFnKVxubGlicmFyeShyZXRoaW5raW5nKVxuXG4jREFHIGNvcm9uYVxuXG5kYWdfY29yb25hPC0gZGFnaXR0eSggXCJkYWcge1xuICAgIGNvcm9uYV9mZWFyIC0+IHNhbml0aXppbmdcbiAgICBzYW5pdGl6aW5nLT4gZ2VybV9sZXZlbFxuICAgIGZhY2VfbWFzayAtPiBnZXJtX2xldmVsXG4gICAgY29yb25hX2ZlYXIgLT4gZmFjZV9tYXNrXG4gICAgZ2VybV9sZXZlbCAtPiBwb3NpdGl2ZV90ZXN0XG59XCIpXG5cbmNvb3JkaW5hdGVzKGRhZ19jb3JvbmEpIDwtIGxpc3QoIHg9YyhDb3JvbmFfRmVhciA9MCxGYWNlX01hc2sgPS0xLCBTYW5pdGl6aW5nID0wLCBHZXJtX0xldmVsPS0xLCBQb3NpdmVfVGVzdD0gLTEpICwgeT1jKENvcm9uYV9GZWFyID0wLEZhY2VfTWFzayA9MCwgU2FuaXRpemluZyA9IDEsIEdlcm1fTGV2ZWw9MSwgUG9zaXZlX1Rlc3Q9MikgKVxuXG5cbmRyYXdkYWcoZGFnX2Nvcm9uYSlcblxuI2dnZGFnKGRhZ19jb3JvbmEsIGxheW91dD1cIm5pY2VseVwiKSt0aGVtZV9kYWdfYmxhbmsoKSAgIyBhbm90aGVyIGxheW91dFxuYGBgIn0= -->
+<pre class="r"><code>
+pacman::p_load(usethis,dplyr, tidyverse, ggplot2, rstan, dagitty,ggdag)
 library(rethinking)
 
 #DAG corona
+
 dag_corona&lt;- dagitty( &quot;dag {
-    Corona_Fear -&gt; Sanitizing
-    Sanitizing-&gt; Germ_Level
-    Face_Mask -&gt; Germ_Level
-    Corona_Fear -&gt; Face_Mask
-    Germ_Level -&gt; Posive_Test
+    corona_fear -&gt; sanitizing
+    sanitizing-&gt; germ_level
+    face_mask -&gt; germ_level
+    corona_fear -&gt; face_mask
+    germ_level -&gt; positive_test
 }&quot;)
 
 coordinates(dag_corona) &lt;- list( x=c(Corona_Fear =0,Face_Mask =-1, Sanitizing =0, Germ_Level=-1, Posive_Test= -1) , y=c(Corona_Fear =0,Face_Mask =0, Sanitizing = 1, Germ_Level=1, Posive_Test=2) )
 
 
-drawdag(dag_corona)</code></pre>
+drawdag(dag_corona)
+
+#ggdag(dag_corona, layout=&quot;nicely&quot;)+theme_dag_blank()  # another layout</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <p>- Find <strong>elemental forms of variable relations</strong> in the DAG (i.e., forks, pipes, colliders, and their descendants).</p>
-<p>Pipe (FM -&gt; GERM -&gt; INFECTED) Fork (S &lt;- CF -&gt;) Collider (S -&gt; FM &lt;- GERM)</p>
-<p>- Find out <strong>what variables to include (and not include)</strong> in a multiple linear regression to avoid &#39;back door&#39; (AKA non-causal) paths. Do this first with your eyes and your mind. Then you can use dagitty&#39;s function <code>adjustmentSets()</code>.</p>
-<p>- Find out which <strong>conditional independencies</strong> the DAG implies. First with the mind, then with daggity&#39;s function <code>impliedConditionalIndependencies()</code>.</p>
-<p>- Find the full list of <strong>Markov equivalent</strong> DAGS. Use daggity&#39;s function <code>equivalentGraphs()</code>.</p>
+<p>Pipe</p>
+<p>(FM -&gt; GERM -&gt; INFECTED)</p>
+<p>(Cf –&gt; FM –&gt; GERM)</p>
+<p>(CF -&gt; S -&gt; GERM)</p>
+<p>(S –&gt; GERM –&gt; INFECTED)</p>
+<p>Fork</p>
+<p>(S &lt;- CF -&gt; FM)</p>
+<p>Collider</p>
+<p>(S -&gt; GERM &lt;- FM)</p>
+<p><em>OBS: ADD DESCRIPTION OF WHY WE BELIEVE THE RELATIONS ABOVE EXIST</em>.</p>
+<p>- Find out <strong>what variables to include (and not include)</strong> in a multiple linear regression to avoid ‘back door’ (AKA non-causal) paths. Do this first with your eyes and your mind. Then you can use dagitty’s function <code>adjustmentSets()</code>.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBTaHV0dGluZyB0aGUgYmFja2Rvb3IgLSBhbmFseXppbmcgdGhlIGdyYXBoIHRvIGJsb2NrIHRoZSBiYWNrZG9vclxuYWRqdXN0bWVudFNldHMoZGFnX2Nvcm9uYSxleHBvc3VyZT1cImNvcm9uYV9mZWFyXCIsIG91dGNvbWU9XCJwb3NpdGl2ZV90ZXN0XCIpXG5cbmBgYCJ9 -->
+<pre class="r"><code># Shutting the backdoor - analyzing the graph to block the backdoor
+adjustmentSets(dag_corona,exposure=&quot;corona_fear&quot;, outcome=&quot;positive_test&quot;)
+</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>OBS: nothing here</p>
+<p>- Find out which <strong>conditional independencies</strong> the DAG implies. First with the mind, then with daggity’s function <code>impliedConditionalIndependencies()</code>.</p>
+<p>First, we find out which conditional independencies the DAG implies.</p>
+<p>Pipe</p>
+<p>(FM -&gt; GERM -&gt; INFECTED)</p>
+<p>(Cf –&gt; FM –&gt; GERM)</p>
+<p>(CF -&gt; S -&gt; GERM)</p>
+<p>(S –&gt; GERM –&gt; INFECTED)</p>
+<p>Fork</p>
+<p>(S &lt;- CF -&gt; FM)</p>
+<p>Collider</p>
+<p>(S -&gt; GERM &lt;- FM)</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBEZXJpdmluZyBvdXIgREFH4oCZcyBjb25kaXRpb25hbCBpbmRlcGVuZGVuY2llc1xuaW1wbGllZENvbmRpdGlvbmFsSW5kZXBlbmRlbmNpZXMoZGFnX2Nvcm9uYSlcblxuYGBgIn0= -->
+<pre class="r"><code># Deriving our DAG’s conditional independencies
+impliedConditionalIndependencies(dag_corona)
+</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>test crn_ <em>||</em> grm_ | fc_m, sntz <em>CF and G are independent of each other if we stratify by both FM and SNTZ)</em></p>
+<pre><code>crn_ _||_ pst_ | grm_
+*If we stratify by G, there is no association between CF and Infection*
+
+crn_ _||_ pst_ | fc_m, sntz
+*OBS*
+
+fc_m _||_ pst_ | grm_
+*OBS*
+
+fc_m _||_ sntz | crn_
+*OBS*
+
+pst_ _||_ sntz | grm_
+*OBS*</code></pre>
+<p>OBS: WE NEED TO EXPLAIN HERE. Chris said the following in the lecture of week 5: “there are a lot of implications of a DAG. There are different ways to test its implication. Use *dagitty* to get a list of testable implications (and go through this list one by one. If one of them is not fulfilled, you can falsify your DAG - but you can’t prove; you can only say *”This DAG is compatible with the data - there may be other DAGs&quot;*.</p>
+<p>- Find the full list of <strong>Markov equivalent</strong> DAGS. Use daggity’s function <code>equivalentGraphs()</code>.</p>
+<p>The equivalentGraphs() function outputs a set of DAGs with the same conditional independencies is known as a Markov equivalence set.</p>
+<p>The list outputted allow show us 3 DAGS that would have the exact same conditional independencies as our dag_corona has.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZXF1aXZhbGVudERBR3MoZGFnX2Nvcm9uYSlcblxuYGBgIn0= -->
+<pre class="r"><code>equivalentDAGs(dag_corona)
+</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
 </div>
 <div id="task-2-the-data" class="section level2">
 <h2>Task 2: The data</h2>
 <p>- <strong>Simulate some data that fits the DAG.</strong> There are many ways to do this. A simple way is just to sample one variable from a normal distribution which has another variable as mean. McElreath does this in the book a few times, and you can use this as inspiration.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
 </div>
 <div id="task-3-statistics" class="section level2">
 <h2>Task 3: Statistics</h2>
-<p>- Run <strong>multiple linear regression</strong>s to <strong>test the conditional independencies</strong> <strong>implied by your DAG</strong>. Make sure to avoid backdoor paths. See that the linear model shows the conditional independencies implied by your DAG, implying that the data and the DAG are compatible (if the linear model doesn&#39;t show the conditional independencies implied by the DAG, the data and the DAG doesn&#39;t fit).</p>
+<p>- Run <strong>multiple linear regression</strong>s to <strong>test the conditional independencies</strong> <strong>implied by your DAG</strong>. Make sure to avoid backdoor paths. See that the linear model shows the conditional independencies implied by your DAG, implying that the data and the DAG are compatible (if the linear model doesn’t show the conditional independencies implied by the DAG, the data and the DAG doesn’t fit).</p>
 </div>
 <div id="task-4-messing-it-up" class="section level2">
 <h2>Task 4: Messing it up</h2>
 <p>- Try and <strong>deliberately have an open back door path</strong> and see if you can get wrong inference.</p>
-<p>- Try and deliberately <strong>simulate some data that doesn&#39;t fit the DAG</strong>, or <strong>create a new DAG that doesn&#39;t fit the data</strong>.</p>
-<p>- Use the same approach as above to <strong>show that the DAG is wrong</strong> (by showing that conditional independencies don&#39;t exist in the data, for example).</p>
+<p>- Try and deliberately <strong>simulate some data that doesn’t fit the DAG</strong>, or <strong>create a new DAG that doesn’t fit the data</strong>.</p>
+<p>- Use the same approach as above to <strong>show that the DAG is wrong</strong> (by showing that conditional independencies don’t exist in the data, for example).</p>
 </div>
 <div id="peters-perfectly-optimal-and-extremely-interesting-example" class="section level2">
-<h2>Peter&#39;s perfectly optimal and extremely interesting example</h2>
-<p><em>In a galaxy far, far away...</em></p>
+<h2>Peter’s perfectly optimal and extremely interesting example</h2>
+<p><em>In a galaxy far, far away…</em></p>
 <p><em>It is a period of civil wars in the galaxy. A brave alliance of underground freedom fighters has challenged the tyranny and oppression of the awesome GALACTIC EMPIRE.</em></p>
 <p><em>To crush the rebellion once and for all, the EMPIRE is constructing a sinister new battle station. Powerful enough to destroy an entire planet, its completion spells certain doom for the champions of freedom.</em></p>
 <p><em>The evil Emperor has figured out, however, that neither the battle station nor the Force can help him avoid that more solar systems join the rebellion. He has therefore hired a CogSci student to use causal modelling and multiple linear regressions to investigate how the activity of the Death Star and other factors affects the probability that a given solar system will join the rebellion (this allows him to more optimally suppress freedom in the Galaxy).</em></p>
@@ -1835,11 +1910,11 @@ drawdag(dag_corona)</code></pre>
 <p>- how much time Darth Vader has spent in the system recently (more time -&gt; more scared)</p>
 <p>Crime levels depend on</p>
 <p>- number of planets recently destroyed by the Death Star (more planets destroyed -&gt; less crime)</p>
-<p>And so on.…</p>
+<p>And so on….</p>
 <!-- rnb-text-end -->
 </div>
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiTWV0aG9kcyA0IC0tIFBvcnRmb2xpbyBBc3NpZ25tZW50IDIiCm91dHB1dDogaHRtbF9ub3RlYm9vawplZGl0b3Jfb3B0aW9uczogCiAgY2h1bmtfb3V0cHV0X3R5cGU6IGlubGluZQotLS0KCi0gKlR5cGU6KiBHcm91cCBhc3NpZ25tZW50Ci0gKkR1ZToqIDMgQXByaWwgMjAyMiwgMjM6NTkKCkhlbGxvIENvZ1NjaVwncyA6KQoKSW4gdGhpcyBwb3J0Zm9saW8sIHlvdSBhcmUgYXNrZWQgdG8gZG8gZm91ciB0YXNrczoKClwtIE1ha2UgYSBEQUcgZm9yIHNvbWV0aGluZwoKXC0gU2ltdWxhdGUgZGF0YSB0aGF0IGZpdHMgdGhlIERBRwoKXC0gVXNlIGxpbmVhciBtb2RlbHMgdG8gY29uZmlybSB0aGF0IHRoZSBEQUcgZml0cyB0aGUgZGF0YQoKXC0gTWVzcyBpdCB1cC4KCkVhY2ggb2YgdGhlIGZvdXIgdGFza3MgaGF2ZSBzb21lIHN1Yi1zdGVwcy5cClJlcG9ydCBicmllZmx5IHdoYXQgeW91IGZpbmQsIGZvciBleGFtcGxlIGluIGEgbWFya2Rvd24gZG9jdW1lbnQsIGZvcgpleGFtcGxlIGNhbGxlZCByZXBvcnQubWQgc28gdGhhdCB0aGUgcG9vciBUQSBjYW4gZWFzaWx5IGdldCBhbiBvdmVydmlldwpiZWZvcmUgbG9va2luZyBpbiB5b3VyIGNvZGUgOikKClRoZW4geW91IGNhbiBhbHNvIG1ha2UgYSAoYnJpZWYhKSBleHBsYW5hdGlvbiBvZiB0aGUgcGhlbm9tZW5vbiB5b3UgYXJlCkRBR0dJTiwgc2ltdWxhdGluZyBhbmQgbW9kZWxsaW5nLgoKTG9va2luZyBmb3J3YXJkICEKCiMjIFRhc2sgMTogVGhlIERBRwoKXC0gKipDb21lIHVwIHdpdGggYW4qKiBpbmNyZWRpYmx5IGludGVyZXN0aW5nIGFuZCBzY2llbnRpZmljYWxseQppbXBvcnRhbnQgbWFkZS11cCAqKmV4YW1wbGUqKiBmb3IgYSBwaGVub21lbm9uIHRvIGludmVzdGlnYXRlLiBEZWNpZGUgb24KdHdvIHZhcmlhYmxlcyAoYW4gb3V0Y29tZSBhbmQgYSBwcmVkaWN0b3IpIHRoYXQgeW91IHdvdWxkIGxpa2UgdG8KaW52ZXN0aWdhdGUgdGhlIHJlbGF0aW9uIGJldHdlZW4uIElmIGluIGRvdWJ0LCB5b3UgKipjYW4gYmUgaW5zcGlyZWQgYnkKUGV0ZXJcJ3MgYW1hemluZyBleGFtcGxlKiogb24gdGhlIG5leHQgcGFnZS4KClwtICoqTWFrZSBhIERBRyoqIGZvciB0aGUgcGhlbm9tZW5vbi4gTWFrZSBpdCBtZWRpdW0gY29tcGxpY2F0ZWQ6IHRoYXQKbWVhbnMsIG1ha2Ugc3VyZSB0aGVyZSBhcmUgc29tZSBkaWZmZXJlbnQga2luZHMgb2YgcmVsYXRpb25zIChzZWUgbmV4dApzdGVwKS4gQ2hhbmdlIGl0IGlmIHlvdSBkb25cJ3QgZ2V0IGFueXRoaW5nIGludGVyZXN0aW5nIGZvciB0aGUgbmV4dApzdGVwcy5cCioqRHJhdyBpdCoqIHNvbWVob3cgKG9uIHBhcGVyLCBpbiBSLCBsYXNlciBlbmdyYXZlZCBpbiBkaWFtb25kKS5cCioqQ29kZSBpdCoqIGluIGRhZ2l0dHkgKHRoaXMgaXMgYSBuaWNlIHRvb2w6Cmh0dHA6Ly9kYWdpdHR5Lm5ldC9kYWdzLmh0bWwgKQoKYGBge3J9CnBhY21hbjo6cF9sb2FkKHVzZXRoaXMsZHBseXIsIHRpZHl2ZXJzZSwgZ2dwbG90MiwgcnN0YW4sIGRhZ2l0dHkpCmxpYnJhcnkocmV0aGlua2luZykKCiNEQUcgY29yb25hCmRhZ19jb3JvbmE8LSBkYWdpdHR5KCAiZGFnIHsKICAgIENvcm9uYV9GZWFyIC0+IFNhbml0aXppbmcKICAgIFNhbml0aXppbmctPiBHZXJtX0xldmVsCiAgICBGYWNlX01hc2sgLT4gR2VybV9MZXZlbAogICAgQ29yb25hX0ZlYXIgLT4gRmFjZV9NYXNrCiAgICBHZXJtX0xldmVsIC0+IFBvc2l2ZV9UZXN0Cn0iKQoKY29vcmRpbmF0ZXMoZGFnX2Nvcm9uYSkgPC0gbGlzdCggeD1jKENvcm9uYV9GZWFyID0wLEZhY2VfTWFzayA9LTEsIFNhbml0aXppbmcgPTAsIEdlcm1fTGV2ZWw9LTEsIFBvc2l2ZV9UZXN0PSAtMSkgLCB5PWMoQ29yb25hX0ZlYXIgPTAsRmFjZV9NYXNrID0wLCBTYW5pdGl6aW5nID0gMSwgR2VybV9MZXZlbD0xLCBQb3NpdmVfVGVzdD0yKSApCgoKZHJhd2RhZyhkYWdfY29yb25hKQpgYGAKCgoKXC0gRmluZCAqKmVsZW1lbnRhbCBmb3JtcyBvZiB2YXJpYWJsZSByZWxhdGlvbnMqKiBpbiB0aGUgREFHCihpLmUuLCBmb3JrcywgcGlwZXMsIGNvbGxpZGVycywgYW5kIHRoZWlyIGRlc2NlbmRhbnRzKS4KClBpcGUKICAgIChGTSAtPiBHRVJNIC0+IElORkVDVEVEKQpGb3JrIAogICAgKFMgPC0gQ0YgLT4pCkNvbGxpZGVyIAogICAgKFMgLT4gRk0gPC0gR0VSTSkKCgoKXC0gRmluZCBvdXQgKip3aGF0IHZhcmlhYmxlcyB0byBpbmNsdWRlIChhbmQgbm90IGluY2x1ZGUpKiogaW4gYQptdWx0aXBsZSBsaW5lYXIgcmVncmVzc2lvbiB0byBhdm9pZCBcJ2JhY2sgZG9vclwnIChBS0Egbm9uLWNhdXNhbCkKcGF0aHMuIERvIHRoaXMgZmlyc3Qgd2l0aCB5b3VyIGV5ZXMgYW5kIHlvdXIgbWluZC4gVGhlbiB5b3UgY2FuIHVzZQpkYWdpdHR5XCdzIGZ1bmN0aW9uIGBhZGp1c3RtZW50U2V0cygpYC4KClwtIEZpbmQgb3V0IHdoaWNoICoqY29uZGl0aW9uYWwgaW5kZXBlbmRlbmNpZXMqKiB0aGUgREFHIGltcGxpZXMuIEZpcnN0CndpdGggdGhlIG1pbmQsIHRoZW4gd2l0aCBkYWdnaXR5XCdzIGZ1bmN0aW9uCmBpbXBsaWVkQ29uZGl0aW9uYWxJbmRlcGVuZGVuY2llcygpYC4KClwtIEZpbmQgdGhlIGZ1bGwgbGlzdCBvZiAqKk1hcmtvdiBlcXVpdmFsZW50KiogREFHUy4gVXNlIGRhZ2dpdHlcJ3MKZnVuY3Rpb24gYGVxdWl2YWxlbnRHcmFwaHMoKWAuCgojIyBUYXNrIDI6IFRoZSBkYXRhCgpcLSAqKlNpbXVsYXRlIHNvbWUgZGF0YSB0aGF0IGZpdHMgdGhlIERBRy4qKiBUaGVyZSBhcmUgbWFueSB3YXlzIHRvIGRvCnRoaXMuIEEgc2ltcGxlIHdheSBpcyBqdXN0IHRvIHNhbXBsZSBvbmUgdmFyaWFibGUgZnJvbSBhIG5vcm1hbApkaXN0cmlidXRpb24gd2hpY2ggaGFzIGFub3RoZXIgdmFyaWFibGUgYXMgbWVhbi4gTWNFbHJlYXRoIGRvZXMgdGhpcyBpbgp0aGUgYm9vayBhIGZldyB0aW1lcywgYW5kIHlvdSBjYW4gdXNlIHRoaXMgYXMgaW5zcGlyYXRpb24uCgojIyBUYXNrIDM6IFN0YXRpc3RpY3MKClwtIFJ1biAqKm11bHRpcGxlIGxpbmVhciByZWdyZXNzaW9uKipzIHRvICoqdGVzdCB0aGUgY29uZGl0aW9uYWwKaW5kZXBlbmRlbmNpZXMqKiAqKmltcGxpZWQgYnkgeW91ciBEQUcqKi4gTWFrZSBzdXJlIHRvIGF2b2lkIGJhY2tkb29yCnBhdGhzLiBTZWUgdGhhdCB0aGUgbGluZWFyIG1vZGVsIHNob3dzIHRoZSBjb25kaXRpb25hbCBpbmRlcGVuZGVuY2llcwppbXBsaWVkIGJ5IHlvdXIgREFHLCBpbXBseWluZyB0aGF0IHRoZSBkYXRhIGFuZCB0aGUgREFHIGFyZSBjb21wYXRpYmxlCihpZiB0aGUgbGluZWFyIG1vZGVsIGRvZXNuXCd0IHNob3cgdGhlIGNvbmRpdGlvbmFsIGluZGVwZW5kZW5jaWVzCmltcGxpZWQgYnkgdGhlIERBRywgdGhlIGRhdGEgYW5kIHRoZSBEQUcgZG9lc25cJ3QgZml0KS4KCiMjIFRhc2sgNDogTWVzc2luZyBpdCB1cAoKXC0gVHJ5IGFuZCAqKmRlbGliZXJhdGVseSBoYXZlIGFuIG9wZW4gYmFjayBkb29yIHBhdGgqKiBhbmQgc2VlIGlmIHlvdQpjYW4gZ2V0IHdyb25nIGluZmVyZW5jZS4KClwtIFRyeSBhbmQgZGVsaWJlcmF0ZWx5ICoqc2ltdWxhdGUgc29tZSBkYXRhIHRoYXQgZG9lc25cJ3QgZml0IHRoZQpEQUcqKiwgb3IgKipjcmVhdGUgYSBuZXcgREFHIHRoYXQgZG9lc25cJ3QgZml0IHRoZSBkYXRhKiouCgpcLSBVc2UgdGhlIHNhbWUgYXBwcm9hY2ggYXMgYWJvdmUgdG8gKipzaG93IHRoYXQgdGhlIERBRyBpcyB3cm9uZyoqIChieQpzaG93aW5nIHRoYXQgY29uZGl0aW9uYWwgaW5kZXBlbmRlbmNpZXMgZG9uXCd0IGV4aXN0IGluIHRoZSBkYXRhLCBmb3IKZXhhbXBsZSkuCgojIyBQZXRlclwncyBwZXJmZWN0bHkgb3B0aW1hbCBhbmQgZXh0cmVtZWx5IGludGVyZXN0aW5nIGV4YW1wbGUKCipJbiBhIGdhbGF4eSBmYXIsIGZhciBhd2F5XC4uLioKCipJdCBpcyBhIHBlcmlvZCBvZiBjaXZpbCB3YXJzIGluIHRoZSBnYWxheHkuIEEgYnJhdmUgYWxsaWFuY2Ugb2YKdW5kZXJncm91bmQgZnJlZWRvbSBmaWdodGVycyBoYXMgY2hhbGxlbmdlZCB0aGUgdHlyYW5ueSBhbmQgb3BwcmVzc2lvbgpvZiB0aGUgYXdlc29tZSBHQUxBQ1RJQyBFTVBJUkUuKgoKKlRvIGNydXNoIHRoZSByZWJlbGxpb24gb25jZSBhbmQgZm9yIGFsbCwgdGhlIEVNUElSRSBpcyBjb25zdHJ1Y3RpbmcgYQpzaW5pc3RlciBuZXcgYmF0dGxlIHN0YXRpb24uIFBvd2VyZnVsIGVub3VnaCB0byBkZXN0cm95IGFuIGVudGlyZQpwbGFuZXQsIGl0cyBjb21wbGV0aW9uIHNwZWxscyBjZXJ0YWluIGRvb20gZm9yIHRoZSBjaGFtcGlvbnMgb2YKZnJlZWRvbS4qCgoqVGhlIGV2aWwgRW1wZXJvciBoYXMgZmlndXJlZCBvdXQsIGhvd2V2ZXIsIHRoYXQgbmVpdGhlciB0aGUgYmF0dGxlCnN0YXRpb24gbm9yIHRoZSBGb3JjZSBjYW4gaGVscCBoaW0gYXZvaWQgdGhhdCBtb3JlIHNvbGFyIHN5c3RlbXMgam9pbgp0aGUgcmViZWxsaW9uLiBIZSBoYXMgdGhlcmVmb3JlIGhpcmVkIGEgQ29nU2NpIHN0dWRlbnQgdG8gdXNlIGNhdXNhbAptb2RlbGxpbmcgYW5kIG11bHRpcGxlIGxpbmVhciByZWdyZXNzaW9ucyB0byBpbnZlc3RpZ2F0ZSBob3cgdGhlCmFjdGl2aXR5IG9mIHRoZSBEZWF0aCBTdGFyIGFuZCBvdGhlciBmYWN0b3JzIGFmZmVjdHMgdGhlIHByb2JhYmlsaXR5CnRoYXQgYSBnaXZlbiBzb2xhciBzeXN0ZW0gd2lsbCBqb2luIHRoZSByZWJlbGxpb24gKHRoaXMgYWxsb3dzIGhpbSB0bwptb3JlIG9wdGltYWxseSBzdXBwcmVzcyBmcmVlZG9tIGluIHRoZSBHYWxheHkpLioKCipZb3UgYXJlIHRoYXQgc3R1ZGVudC4qCgpXZSBhc3N1bWUgdGhhdCB0aGUgcHJvYmFiaWxpdHkgb2YgYSBzb2xhciBzeXN0ZW0gam9pbmluZyB0aGUgcmViZWxsaW9uIGRlcGVuZHMgb25cCi0gaG93IG1hbnkgcmViZWxsaW9uIHN5bXBhdGhpemVycyB0aGVyZSBpcyBpbiB0aGUgc3lzdGVtIChtb3JlIHJlYmVscwotXD4gaGlnaGVyIHByb2JhYmlsaXR5IG9mIGpvaW5pbmcgdGhlIHJlYmVsbGlvbilcCi0gaG93IHNjYXJlZCBwZW9wbGUgYXJlIGluIHRoZSBzeXN0ZW0gKG1vcmUgc2NhcmVkIC1cPiBsb3dlciBwcm9iYWJpbGl0eQpvZiBqb2luaW5nIHRoZSByZWJlbGxpb24pLgoKSG93IG1hbnkgcmViZWxsaW9uIHN5bXBhdGhpemVycyB0aGVyZSBpcyBpbiBhIHN5c3RlbSBkZXBlbmRzIG9uCgpcLSBjcmltZSBsZXZlbHMgKGxlc3MgY3JpbWUgLVw+IGxlc3MgcmViZWxsaW9uIHN5bXBhdGhpemVycykKClwtIG51bWJlciBvZiBwbGFuZXRzIHJlY2VudGx5IGRlc3Ryb3llZCBieSB0aGUgRGVhdGggU3RhciAobW9yZSBwbGFuZXRzCmRlc3Ryb3llZCAtXD4gbW9yZSByZWJlbGxpb24gc3ltcGF0aGl6ZXJzKQoKXC0gbnVtYmVyIG9mIEplZGlzIGluIHRoZSBzeXN0ZW0gKG1vcmUgSmVkaXMgLVw+IG1vcmUgcmViZWxsaW9uCnN5bXBhdGhpemVycykKCkhvdyBzY2FyZWQgcGVvcGxlIGFyZSBkZXBlbmRzIG9uCgpcLSB3aGV0aGVyIG9yIG5vdCB0aGUgRGVhdGggU3RhciBpcyBuZWFyYnkgKG5lYXJieSAtXD4gbW9yZSBzY2FyZWQpCgpcLSBob3cgbWFueSBqZWRpcyBhcmUgaW4gdGhlIHN5c3RlbSAobW9yZSBKZWRpcyAtXD4gbGVzcyBzY2FyZWQpCgpcLSBob3cgbXVjaCB0aW1lIERhcnRoIFZhZGVyIGhhcyBzcGVudCBpbiB0aGUgc3lzdGVtIHJlY2VudGx5IChtb3JlIHRpbWUKLVw+IG1vcmUgc2NhcmVkKQoKQ3JpbWUgbGV2ZWxzIGRlcGVuZCBvbgoKXC0gbnVtYmVyIG9mIHBsYW5ldHMgcmVjZW50bHkgZGVzdHJveWVkIGJ5IHRoZSBEZWF0aCBTdGFyIChtb3JlIHBsYW5ldHMKZGVzdHJveWVkIC1cPiBsZXNzIGNyaW1lKQoKQW5kIHNvIG9uXC4uLi4KCg==</div>
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiTWV0aG9kcyA0IC0tIFBvcnRmb2xpbyBBc3NpZ25tZW50IDIiCm91dHB1dDogaHRtbF9ub3RlYm9vawplZGl0b3Jfb3B0aW9uczogCiAgY2h1bmtfb3V0cHV0X3R5cGU6IGlubGluZQogIG1hcmtkb3duOiAKICAgIHdyYXA6IDcyCi0tLQoKLSAgICpUeXBlOiogR3JvdXAgYXNzaWdubWVudAotICAgKkR1ZToqIDMgQXByaWwgMjAyMiwgMjM6NTkKCkhlbGxvIENvZ1NjaSdzIDopCgpJbiB0aGlzIHBvcnRmb2xpbywgeW91IGFyZSBhc2tlZCB0byBkbyBmb3VyIHRhc2tzOgoKXC0gTWFrZSBhIERBRyBmb3Igc29tZXRoaW5nCgpcLSBTaW11bGF0ZSBkYXRhIHRoYXQgZml0cyB0aGUgREFHCgpcLSBVc2UgbGluZWFyIG1vZGVscyB0byBjb25maXJtIHRoYXQgdGhlIERBRyBmaXRzIHRoZSBkYXRhCgpcLSBNZXNzIGl0IHVwLgoKRWFjaCBvZiB0aGUgZm91ciB0YXNrcyBoYXZlIHNvbWUgc3ViLXN0ZXBzLlwKUmVwb3J0IGJyaWVmbHkgd2hhdCB5b3UgZmluZCwgZm9yIGV4YW1wbGUgaW4gYSBtYXJrZG93biBkb2N1bWVudCwgZm9yCmV4YW1wbGUgY2FsbGVkIHJlcG9ydC5tZCBzbyB0aGF0IHRoZSBwb29yIFRBIGNhbiBlYXNpbHkgZ2V0IGFuIG92ZXJ2aWV3CmJlZm9yZSBsb29raW5nIGluIHlvdXIgY29kZSA6KQoKVGhlbiB5b3UgY2FuIGFsc28gbWFrZSBhIChicmllZiEpIGV4cGxhbmF0aW9uIG9mIHRoZSBwaGVub21lbm9uIHlvdSBhcmUKREFHR0lOLCBzaW11bGF0aW5nIGFuZCBtb2RlbGxpbmcuCgpMb29raW5nIGZvcndhcmQgIQoKIyMgVGFzayAxOiBUaGUgREFHCgpcLSAqKkNvbWUgdXAgd2l0aCBhbioqIGluY3JlZGlibHkgaW50ZXJlc3RpbmcgYW5kIHNjaWVudGlmaWNhbGx5CmltcG9ydGFudCBtYWRlLXVwICoqZXhhbXBsZSoqIGZvciBhIHBoZW5vbWVub24gdG8gaW52ZXN0aWdhdGUuIERlY2lkZSBvbgp0d28gdmFyaWFibGVzIChhbiBvdXRjb21lIGFuZCBhIHByZWRpY3RvcikgdGhhdCB5b3Ugd291bGQgbGlrZSB0bwppbnZlc3RpZ2F0ZSB0aGUgcmVsYXRpb24gYmV0d2Vlbi4gSWYgaW4gZG91YnQsIHlvdSAqKmNhbiBiZSBpbnNwaXJlZCBieQpQZXRlcidzIGFtYXppbmcgZXhhbXBsZSoqIG9uIHRoZSBuZXh0IHBhZ2UuCgpJbiBvdXIgZXhhbXBsZSwgd2Ugd2lzaCB0byBpbnZlc3RpZ2F0ZSB0aGUgZWZmZWN0IG9mIGNvcm9uYSBmZWFyIChDRikgb24KdGhlIHZhcmlhYmxlIEluZmVjdGVkIChhIGJpbmFyeSB2YXJpYWJsZSB0YWtpbmcgZWl0aGVyIHRoZSB2YWx1ZSAwIG9yCjEpLgoKUHJlZGljdG9yOiBjb3JvbmEgZmVhciAoY29udGludW91cyB2YXJpYWJsZSkgT3V0Y29tZSB2YXJpYWJsZTogaW5mZWN0aW9uCigwLzEpCgpTYW5pdGlzaW5nOiBjb250aW51b3VzIHZhcmlhYmxlIEZNIHZhcmlhYmxlOiBkbyB5b3Ugd2VhciBmYWNlIG1hc2sKYWNjb3JkaW5nIHRvIHRoZSBuYXRpb25hbCBndWlkZWxpbmVzPyAoYmluYXJ5IHZhcmlhYmxlOyAwLzEpIEdlcm0gbGV2ZWw6CmNvbnRpbnVvdXMKClwtICoqTWFrZSBhIERBRyoqIGZvciB0aGUgcGhlbm9tZW5vbi4gTWFrZSBpdCBtZWRpdW0gY29tcGxpY2F0ZWQ6IHRoYXQKbWVhbnMsIG1ha2Ugc3VyZSB0aGVyZSBhcmUgc29tZSBkaWZmZXJlbnQga2luZHMgb2YgcmVsYXRpb25zIChzZWUgbmV4dApzdGVwKS4gQ2hhbmdlIGl0IGlmIHlvdSBkb24ndCBnZXQgYW55dGhpbmcgaW50ZXJlc3RpbmcgZm9yIHRoZSBuZXh0CnN0ZXBzLlwKKipEcmF3IGl0Kiogc29tZWhvdyAob24gcGFwZXIsIGluIFIsIGxhc2VyIGVuZ3JhdmVkIGluIGRpYW1vbmQpLlwKKipDb2RlIGl0KiogaW4gZGFnaXR0eSAodGhpcyBpcyBhIG5pY2UgdG9vbDoKPGh0dHA6Ly9kYWdpdHR5Lm5ldC9kYWdzLmh0bWw+ICkKCmBgYHtyfQoKcGFjbWFuOjpwX2xvYWQodXNldGhpcyxkcGx5ciwgdGlkeXZlcnNlLCBnZ3Bsb3QyLCByc3RhbiwgZGFnaXR0eSxnZ2RhZykKbGlicmFyeShyZXRoaW5raW5nKQoKI0RBRyBjb3JvbmEKCmRhZ19jb3JvbmE8LSBkYWdpdHR5KCAiZGFnIHsKICAgIGNvcm9uYV9mZWFyIC0+IHNhbml0aXppbmcKICAgIHNhbml0aXppbmctPiBnZXJtX2xldmVsCiAgICBmYWNlX21hc2sgLT4gZ2VybV9sZXZlbAogICAgY29yb25hX2ZlYXIgLT4gZmFjZV9tYXNrCiAgICBnZXJtX2xldmVsIC0+IHBvc2l0aXZlX3Rlc3QKfSIpCgpjb29yZGluYXRlcyhkYWdfY29yb25hKSA8LSBsaXN0KCB4PWMoQ29yb25hX0ZlYXIgPTAsRmFjZV9NYXNrID0tMSwgU2FuaXRpemluZyA9MCwgR2VybV9MZXZlbD0tMSwgUG9zaXZlX1Rlc3Q9IC0xKSAsIHk9YyhDb3JvbmFfRmVhciA9MCxGYWNlX01hc2sgPTAsIFNhbml0aXppbmcgPSAxLCBHZXJtX0xldmVsPTEsIFBvc2l2ZV9UZXN0PTIpICkKCgpkcmF3ZGFnKGRhZ19jb3JvbmEpCgojZ2dkYWcoZGFnX2Nvcm9uYSwgbGF5b3V0PSJuaWNlbHkiKSt0aGVtZV9kYWdfYmxhbmsoKSAgIyBhbm90aGVyIGxheW91dApgYGAKClwtIEZpbmQgKiplbGVtZW50YWwgZm9ybXMgb2YgdmFyaWFibGUgcmVsYXRpb25zKiogaW4gdGhlIERBRyAoaS5lLiwKZm9ya3MsIHBpcGVzLCBjb2xsaWRlcnMsIGFuZCB0aGVpciBkZXNjZW5kYW50cykuCgpQaXBlCgooRk0gLVw+IEdFUk0gLVw+IElORkVDVEVEKQoKKENmIC0tXD4gRk0gLS1cPiBHRVJNKQoKKENGIC1cPiBTIC1cPiBHRVJNKQoKKFMgLS1cPiBHRVJNIC0tXD4gSU5GRUNURUQpCgpGb3JrCgooUyBcPC0gQ0YgLVw+IEZNKQoKQ29sbGlkZXIKCihTIC1cPiBHRVJNIFw8LSBGTSkKCipPQlM6IEFERCBERVNDUklQVElPTiBPRiBXSFkgV0UgQkVMSUVWRSBUSEUgUkVMQVRJT05TIEFCT1ZFIEVYSVNUKi4KClwtIEZpbmQgb3V0ICoqd2hhdCB2YXJpYWJsZXMgdG8gaW5jbHVkZSAoYW5kIG5vdCBpbmNsdWRlKSoqIGluIGEKbXVsdGlwbGUgbGluZWFyIHJlZ3Jlc3Npb24gdG8gYXZvaWQgJ2JhY2sgZG9vcicgKEFLQSBub24tY2F1c2FsKSBwYXRocy4KRG8gdGhpcyBmaXJzdCB3aXRoIHlvdXIgZXllcyBhbmQgeW91ciBtaW5kLiBUaGVuIHlvdSBjYW4gdXNlIGRhZ2l0dHkncwpmdW5jdGlvbiBgYWRqdXN0bWVudFNldHMoKWAuCgpgYGB7cn0KIyBTaHV0dGluZyB0aGUgYmFja2Rvb3IgLSBhbmFseXppbmcgdGhlIGdyYXBoIHRvIGJsb2NrIHRoZSBiYWNrZG9vcgphZGp1c3RtZW50U2V0cyhkYWdfY29yb25hLGV4cG9zdXJlPSJjb3JvbmFfZmVhciIsIG91dGNvbWU9InBvc2l0aXZlX3Rlc3QiKQoKYGBgCgpPQlM6IG5vdGhpbmcgaGVyZQoKXC0gRmluZCBvdXQgd2hpY2ggKipjb25kaXRpb25hbCBpbmRlcGVuZGVuY2llcyoqIHRoZSBEQUcgaW1wbGllcy4gRmlyc3QKd2l0aCB0aGUgbWluZCwgdGhlbiB3aXRoIGRhZ2dpdHkncyBmdW5jdGlvbgpgaW1wbGllZENvbmRpdGlvbmFsSW5kZXBlbmRlbmNpZXMoKWAuCgpGaXJzdCwgd2UgZmluZCBvdXQgd2hpY2ggY29uZGl0aW9uYWwgaW5kZXBlbmRlbmNpZXMgdGhlIERBRyBpbXBsaWVzLgoKUGlwZQoKKEZNIC1cPiBHRVJNIC1cPiBJTkZFQ1RFRCkKCihDZiAtLVw+IEZNIC0tXD4gR0VSTSkKCihDRiAtXD4gUyAtXD4gR0VSTSkKCihTIC0tXD4gR0VSTSAtLVw+IElORkVDVEVEKQoKRm9yawoKKFMgXDwtIENGIC1cPiBGTSkKCkNvbGxpZGVyCgooUyAtXD4gR0VSTSBcPC0gRk0pCgpgYGB7cn0KIyBEZXJpdmluZyBvdXIgREFH4oCZcyBjb25kaXRpb25hbCBpbmRlcGVuZGVuY2llcwppbXBsaWVkQ29uZGl0aW9uYWxJbmRlcGVuZGVuY2llcyhkYWdfY29yb25hKQoKYGBgCnRlc3QKICAgIGNybl8gX3x8XyBncm1fIHwgZmNfbSwgc250egogICAgKkNGIGFuZCBHIGFyZSBpbmRlcGVuZGVudCBvZiBlYWNoIG90aGVyIGlmIHdlIHN0cmF0aWZ5IGJ5IGJvdGggRk0gYW5kIFNOVFopKiAKCgogICAgY3JuXyBffHxfIHBzdF8gfCBncm1fCiAgICAqSWYgd2Ugc3RyYXRpZnkgYnkgRywgdGhlcmUgaXMgbm8gYXNzb2NpYXRpb24gYmV0d2VlbiBDRiBhbmQgSW5mZWN0aW9uKgoKICAgIGNybl8gX3x8XyBwc3RfIHwgZmNfbSwgc250egogICAgKk9CUyoKCiAgICBmY19tIF98fF8gcHN0XyB8IGdybV8KICAgICpPQlMqCgogICAgZmNfbSBffHxfIHNudHogfCBjcm5fCiAgICAqT0JTKgoKICAgIHBzdF8gX3x8XyBzbnR6IHwgZ3JtXwogICAgKk9CUyoKCk9CUzogV0UgTkVFRCBUTyBFWFBMQUlOIEhFUkUuIENocmlzIHNhaWQgdGhlIGZvbGxvd2luZyBpbiB0aGUgbGVjdHVyZSBvZgp3ZWVrIDU6ICJ0aGVyZSBhcmUgYSBsb3Qgb2YgaW1wbGljYXRpb25zIG9mIGEgREFHLiBUaGVyZSBhcmUgZGlmZmVyZW50CndheXMgdG8gdGVzdCBpdHMgaW1wbGljYXRpb24uIFVzZSBcKmRhZ2l0dHlcKiB0byBnZXQgYSBsaXN0IG9mIHRlc3RhYmxlCmltcGxpY2F0aW9ucyAoYW5kIGdvIHRocm91Z2ggdGhpcyBsaXN0IG9uZSBieSBvbmUuIElmIG9uZSBvZiB0aGVtIGlzIG5vdApmdWxmaWxsZWQsIHlvdSBjYW4gZmFsc2lmeSB5b3VyIERBRyAtIGJ1dCB5b3UgY2FuJ3QgcHJvdmU7IHlvdSBjYW4gb25seQpzYXkgXCoiVGhpcyBEQUcgaXMgY29tcGF0aWJsZSB3aXRoIHRoZSBkYXRhIC0gdGhlcmUgbWF5IGJlIG90aGVyCkRBR3MiXCouCgpcLSBGaW5kIHRoZSBmdWxsIGxpc3Qgb2YgKipNYXJrb3YgZXF1aXZhbGVudCoqIERBR1MuIFVzZSBkYWdnaXR5J3MKZnVuY3Rpb24gYGVxdWl2YWxlbnRHcmFwaHMoKWAuCgpUaGUgZXF1aXZhbGVudEdyYXBocygpIGZ1bmN0aW9uIG91dHB1dHMgYSBzZXQgb2YgREFHcyB3aXRoIHRoZSBzYW1lCmNvbmRpdGlvbmFsIGluZGVwZW5kZW5jaWVzIGlzIGtub3duIGFzIGEgTWFya292IGVxdWl2YWxlbmNlIHNldC4KClRoZSBsaXN0IG91dHB1dHRlZCBhbGxvdyBzaG93IHVzIDMgREFHUyB0aGF0IHdvdWxkIGhhdmUgdGhlIGV4YWN0IHNhbWUKY29uZGl0aW9uYWwgaW5kZXBlbmRlbmNpZXMgYXMgb3VyIGRhZ19jb3JvbmEgaGFzLgoKYGBge3J9CmVxdWl2YWxlbnREQUdzKGRhZ19jb3JvbmEpCgpgYGAKCiMjIFRhc2sgMjogVGhlIGRhdGEKClwtICoqU2ltdWxhdGUgc29tZSBkYXRhIHRoYXQgZml0cyB0aGUgREFHLioqIFRoZXJlIGFyZSBtYW55IHdheXMgdG8gZG8KdGhpcy4gQSBzaW1wbGUgd2F5IGlzIGp1c3QgdG8gc2FtcGxlIG9uZSB2YXJpYWJsZSBmcm9tIGEgbm9ybWFsCmRpc3RyaWJ1dGlvbiB3aGljaCBoYXMgYW5vdGhlciB2YXJpYWJsZSBhcyBtZWFuLiBNY0VscmVhdGggZG9lcyB0aGlzIGluCnRoZSBib29rIGEgZmV3IHRpbWVzLCBhbmQgeW91IGNhbiB1c2UgdGhpcyBhcyBpbnNwaXJhdGlvbi4KCmBgYHtyfQoKCmBgYAoKIyMgVGFzayAzOiBTdGF0aXN0aWNzCgpcLSBSdW4gKiptdWx0aXBsZSBsaW5lYXIgcmVncmVzc2lvbioqcyB0byAqKnRlc3QgdGhlIGNvbmRpdGlvbmFsCmluZGVwZW5kZW5jaWVzKiogKippbXBsaWVkIGJ5IHlvdXIgREFHKiouIE1ha2Ugc3VyZSB0byBhdm9pZCBiYWNrZG9vcgpwYXRocy4gU2VlIHRoYXQgdGhlIGxpbmVhciBtb2RlbCBzaG93cyB0aGUgY29uZGl0aW9uYWwgaW5kZXBlbmRlbmNpZXMKaW1wbGllZCBieSB5b3VyIERBRywgaW1wbHlpbmcgdGhhdCB0aGUgZGF0YSBhbmQgdGhlIERBRyBhcmUgY29tcGF0aWJsZQooaWYgdGhlIGxpbmVhciBtb2RlbCBkb2Vzbid0IHNob3cgdGhlIGNvbmRpdGlvbmFsIGluZGVwZW5kZW5jaWVzIGltcGxpZWQKYnkgdGhlIERBRywgdGhlIGRhdGEgYW5kIHRoZSBEQUcgZG9lc24ndCBmaXQpLgoKIyMgVGFzayA0OiBNZXNzaW5nIGl0IHVwCgpcLSBUcnkgYW5kICoqZGVsaWJlcmF0ZWx5IGhhdmUgYW4gb3BlbiBiYWNrIGRvb3IgcGF0aCoqIGFuZCBzZWUgaWYgeW91CmNhbiBnZXQgd3JvbmcgaW5mZXJlbmNlLgoKXC0gVHJ5IGFuZCBkZWxpYmVyYXRlbHkgKipzaW11bGF0ZSBzb21lIGRhdGEgdGhhdCBkb2Vzbid0IGZpdCB0aGUgREFHKiosCm9yICoqY3JlYXRlIGEgbmV3IERBRyB0aGF0IGRvZXNuJ3QgZml0IHRoZSBkYXRhKiouCgpcLSBVc2UgdGhlIHNhbWUgYXBwcm9hY2ggYXMgYWJvdmUgdG8gKipzaG93IHRoYXQgdGhlIERBRyBpcyB3cm9uZyoqIChieQpzaG93aW5nIHRoYXQgY29uZGl0aW9uYWwgaW5kZXBlbmRlbmNpZXMgZG9uJ3QgZXhpc3QgaW4gdGhlIGRhdGEsIGZvcgpleGFtcGxlKS4KCiMjIFBldGVyJ3MgcGVyZmVjdGx5IG9wdGltYWwgYW5kIGV4dHJlbWVseSBpbnRlcmVzdGluZyBleGFtcGxlCgoqSW4gYSBnYWxheHkgZmFyLCBmYXIgYXdheS4uLioKCipJdCBpcyBhIHBlcmlvZCBvZiBjaXZpbCB3YXJzIGluIHRoZSBnYWxheHkuIEEgYnJhdmUgYWxsaWFuY2Ugb2YKdW5kZXJncm91bmQgZnJlZWRvbSBmaWdodGVycyBoYXMgY2hhbGxlbmdlZCB0aGUgdHlyYW5ueSBhbmQgb3BwcmVzc2lvbgpvZiB0aGUgYXdlc29tZSBHQUxBQ1RJQyBFTVBJUkUuKgoKKlRvIGNydXNoIHRoZSByZWJlbGxpb24gb25jZSBhbmQgZm9yIGFsbCwgdGhlIEVNUElSRSBpcyBjb25zdHJ1Y3RpbmcgYQpzaW5pc3RlciBuZXcgYmF0dGxlIHN0YXRpb24uIFBvd2VyZnVsIGVub3VnaCB0byBkZXN0cm95IGFuIGVudGlyZQpwbGFuZXQsIGl0cyBjb21wbGV0aW9uIHNwZWxscyBjZXJ0YWluIGRvb20gZm9yIHRoZSBjaGFtcGlvbnMgb2YKZnJlZWRvbS4qCgoqVGhlIGV2aWwgRW1wZXJvciBoYXMgZmlndXJlZCBvdXQsIGhvd2V2ZXIsIHRoYXQgbmVpdGhlciB0aGUgYmF0dGxlCnN0YXRpb24gbm9yIHRoZSBGb3JjZSBjYW4gaGVscCBoaW0gYXZvaWQgdGhhdCBtb3JlIHNvbGFyIHN5c3RlbXMgam9pbgp0aGUgcmViZWxsaW9uLiBIZSBoYXMgdGhlcmVmb3JlIGhpcmVkIGEgQ29nU2NpIHN0dWRlbnQgdG8gdXNlIGNhdXNhbAptb2RlbGxpbmcgYW5kIG11bHRpcGxlIGxpbmVhciByZWdyZXNzaW9ucyB0byBpbnZlc3RpZ2F0ZSBob3cgdGhlCmFjdGl2aXR5IG9mIHRoZSBEZWF0aCBTdGFyIGFuZCBvdGhlciBmYWN0b3JzIGFmZmVjdHMgdGhlIHByb2JhYmlsaXR5CnRoYXQgYSBnaXZlbiBzb2xhciBzeXN0ZW0gd2lsbCBqb2luIHRoZSByZWJlbGxpb24gKHRoaXMgYWxsb3dzIGhpbSB0bwptb3JlIG9wdGltYWxseSBzdXBwcmVzcyBmcmVlZG9tIGluIHRoZSBHYWxheHkpLioKCipZb3UgYXJlIHRoYXQgc3R1ZGVudC4qCgpXZSBhc3N1bWUgdGhhdCB0aGUgcHJvYmFiaWxpdHkgb2YgYSBzb2xhciBzeXN0ZW0gam9pbmluZyB0aGUgcmViZWxsaW9uCmRlcGVuZHMgb25cCi0gaG93IG1hbnkgcmViZWxsaW9uIHN5bXBhdGhpemVycyB0aGVyZSBpcyBpbiB0aGUgc3lzdGVtIChtb3JlIHJlYmVscwotXD4gaGlnaGVyIHByb2JhYmlsaXR5IG9mIGpvaW5pbmcgdGhlIHJlYmVsbGlvbilcCi0gaG93IHNjYXJlZCBwZW9wbGUgYXJlIGluIHRoZSBzeXN0ZW0gKG1vcmUgc2NhcmVkIC1cPiBsb3dlciBwcm9iYWJpbGl0eQpvZiBqb2luaW5nIHRoZSByZWJlbGxpb24pLgoKSG93IG1hbnkgcmViZWxsaW9uIHN5bXBhdGhpemVycyB0aGVyZSBpcyBpbiBhIHN5c3RlbSBkZXBlbmRzIG9uCgpcLSBjcmltZSBsZXZlbHMgKGxlc3MgY3JpbWUgLVw+IGxlc3MgcmViZWxsaW9uIHN5bXBhdGhpemVycykKClwtIG51bWJlciBvZiBwbGFuZXRzIHJlY2VudGx5IGRlc3Ryb3llZCBieSB0aGUgRGVhdGggU3RhciAobW9yZSBwbGFuZXRzCmRlc3Ryb3llZCAtXD4gbW9yZSByZWJlbGxpb24gc3ltcGF0aGl6ZXJzKQoKXC0gbnVtYmVyIG9mIEplZGlzIGluIHRoZSBzeXN0ZW0gKG1vcmUgSmVkaXMgLVw+IG1vcmUgcmViZWxsaW9uCnN5bXBhdGhpemVycykKCkhvdyBzY2FyZWQgcGVvcGxlIGFyZSBkZXBlbmRzIG9uCgpcLSB3aGV0aGVyIG9yIG5vdCB0aGUgRGVhdGggU3RhciBpcyBuZWFyYnkgKG5lYXJieSAtXD4gbW9yZSBzY2FyZWQpCgpcLSBob3cgbWFueSBqZWRpcyBhcmUgaW4gdGhlIHN5c3RlbSAobW9yZSBKZWRpcyAtXD4gbGVzcyBzY2FyZWQpCgpcLSBob3cgbXVjaCB0aW1lIERhcnRoIFZhZGVyIGhhcyBzcGVudCBpbiB0aGUgc3lzdGVtIHJlY2VudGx5IChtb3JlIHRpbWUKLVw+IG1vcmUgc2NhcmVkKQoKQ3JpbWUgbGV2ZWxzIGRlcGVuZCBvbgoKXC0gbnVtYmVyIG9mIHBsYW5ldHMgcmVjZW50bHkgZGVzdHJveWVkIGJ5IHRoZSBEZWF0aCBTdGFyIChtb3JlIHBsYW5ldHMKZGVzdHJveWVkIC1cPiBsZXNzIGNyaW1lKQoKQW5kIHNvIG9uLi4uLgo=</div>
 
 
 
@@ -1886,7 +1961,7 @@ $(document).ready(function () {
 <!-- code folding -->
 <script>
 $(document).ready(function () {
-  window.initializeSourceEmbed("portfolio_2.Rmd");
+  window.initializeSourceEmbed("portfolio_2.rmd");
   window.initializeCodeFolding("show" === "show");
 });
 </script>

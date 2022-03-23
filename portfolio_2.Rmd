@@ -147,7 +147,7 @@ Collider
 impliedConditionalIndependencies(dag_corona)
 
 ```
-
+test
     crn_ _||_ grm_ | fc_m, sntz
     *CF and G are independent of each other if we stratify by both FM and SNTZ)* 
 
