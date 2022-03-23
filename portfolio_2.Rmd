@@ -3,12 +3,14 @@ title: "Methods 4 -- Portfolio Assignment 2"
 output: html_notebook
 editor_options: 
   chunk_output_type: inline
+  markdown: 
+    wrap: 72
 ---
 
-- *Type:* Group assignment
-- *Due:* 3 April 2022, 23:59
+-   *Type:* Group assignment
+-   *Due:* 3 April 2022, 23:59
 
-Hello CogSci\'s :)
+Hello CogSci's :)
 
 In this portfolio, you are asked to do four tasks:
 
@@ -36,28 +38,40 @@ Looking forward !
 important made-up **example** for a phenomenon to investigate. Decide on
 two variables (an outcome and a predictor) that you would like to
 investigate the relation between. If in doubt, you **can be inspired by
-Peter\'s amazing example** on the next page.
+Peter's amazing example** on the next page.
+
+In our example, we wish to investigate the effect of corona fear (CF) on
+the variable Infected (a binary variable taking either the value 0 or
+1).
+
+Predictor: corona fear (continuous variable) Outcome variable: infection
+(0/1)
+
+Sanitising: continuous variable FM variable: do you wear face mask
+according to the national guidelines? (binary variable; 0/1) Germ level:
+continuous
 
 \- **Make a DAG** for the phenomenon. Make it medium complicated: that
 means, make sure there are some different kinds of relations (see next
-step). Change it if you don\'t get anything interesting for the next
+step). Change it if you don't get anything interesting for the next
 steps.\
 **Draw it** somehow (on paper, in R, laser engraved in diamond).\
 **Code it** in dagitty (this is a nice tool:
-http://dagitty.net/dags.html )
+<http://dagitty.net/dags.html> )
 
 ```{r}
 
-pacman::p_load(usethis,dplyr, tidyverse, ggplot2, rstan, dagitty)
+pacman::p_load(usethis,dplyr, tidyverse, ggplot2, rstan, dagitty,ggdag)
 library(rethinking)
 
 #DAG corona
+
 dag_corona<- dagitty( "dag {
-    Corona_Fear -> Sanitizing
-    Sanitizing-> Germ_Level
-    Face_Mask -> Germ_Level
-    Corona_Fear -> Face_Mask
-    Germ_Level -> Posive_Test
+    corona_fear -> sanitizing
+    sanitizing-> germ_level
+    face_mask -> germ_level
+    corona_fear -> face_mask
+    germ_level -> positive_test
 }")
 
 coordinates(dag_corona) <- list( x=c(Corona_Fear =0,Face_Mask =-1, Sanitizing =0, Germ_Level=-1, Posive_Test= -1) , y=c(Corona_Fear =0,Face_Mask =0, Sanitizing = 1, Germ_Level=1, Posive_Test=2) )
@@ -65,24 +79,115 @@ coordinates(dag_corona) <- list( x=c(Corona_Fear =0,Face_Mask =-1, Sanitizing =0
 
 drawdag(dag_corona)
 
+#ggdag(dag_corona, layout="nicely")+theme_dag_blank()  # another layout
 ```
 
+\- Find **elemental forms of variable relations** in the DAG (i.e.,
+forks, pipes, colliders, and their descendants).
 
+Pipe
 
-\- Find **elemental forms of variable relations** in the DAG
-(i.e., forks, pipes, colliders, and their descendants).
+(FM -\> GERM -\> INFECTED)
+
+(Cf --\> FM --\> GERM)
+
+(CF -\> S -\> GERM)
+
+(S --\> GERM --\> INFECTED)
+
+Fork
+
+(S \<- CF -\> FM)
+
+Collider
+
+(S -\> GERM \<- FM)
+
+*OBS: ADD DESCRIPTION OF WHY WE BELIEVE THE RELATIONS ABOVE EXIST*.
 
 \- Find out **what variables to include (and not include)** in a
-multiple linear regression to avoid \'back door\' (AKA non-causal)
-paths. Do this first with your eyes and your mind. Then you can use
-dagitty\'s function `adjustmentSets()`.
+multiple linear regression to avoid 'back door' (AKA non-causal) paths.
+Do this first with your eyes and your mind. Then you can use dagitty's
+function `adjustmentSets()`.
+
+```{r}
+# Shutting the backdoor - analyzing the graph to block the backdoor
+adjustmentSets(dag_corona,exposure="corona_fear", outcome="positive_test")
+
+```
+
+OBS: nothing here
 
 \- Find out which **conditional independencies** the DAG implies. First
-with the mind, then with daggity\'s function
+with the mind, then with daggity's function
 `impliedConditionalIndependencies()`.
 
-\- Find the full list of **Markov equivalent** DAGS. Use daggity\'s
+First, we find out which conditional independencies the DAG implies.
+
+Pipe
+
+(FM -\> GERM -\> INFECTED)
+
+(Cf --\> FM --\> GERM)
+
+(CF -\> S -\> GERM)
+
+(S --\> GERM --\> INFECTED)
+
+Fork
+
+(S \<- CF -\> FM)
+
+Collider
+
+(S -\> GERM \<- FM)
+
+```{r}
+# Deriving our DAG’s conditional independencies
+impliedConditionalIndependencies(dag_corona)
+
+```
+
+    crn_ _||_ grm_ | fc_m, sntz
+    *CF and G are independent of each other if we stratify by both FM and SNTZ)* 
+
+
+    crn_ _||_ pst_ | grm_
+    *If we stratify by G, there is no association between CF and Infection*
+
+    crn_ _||_ pst_ | fc_m, sntz
+    *OBS*
+
+    fc_m _||_ pst_ | grm_
+    *OBS*
+
+    fc_m _||_ sntz | crn_
+    *OBS*
+
+    pst_ _||_ sntz | grm_
+    *OBS*
+
+OBS: WE NEED TO EXPLAIN HERE. Chris said the following in the lecture of
+week 5: "there are a lot of implications of a DAG. There are different
+ways to test its implication. Use \*dagitty\* to get a list of testable
+implications (and go through this list one by one. If one of them is not
+fulfilled, you can falsify your DAG - but you can't prove; you can only
+say \*"This DAG is compatible with the data - there may be other
+DAGs"\*.
+
+\- Find the full list of **Markov equivalent** DAGS. Use daggity's
 function `equivalentGraphs()`.
+
+The equivalentGraphs() function outputs a set of DAGs with the same
+conditional independencies is known as a Markov equivalence set.
+
+The list outputted allow show us 3 DAGS that would have the exact same
+conditional independencies as our dag_corona has.
+
+```{r}
+equivalentDAGs(dag_corona)
+
+```
 
 ## Task 2: The data
 
@@ -91,30 +196,35 @@ this. A simple way is just to sample one variable from a normal
 distribution which has another variable as mean. McElreath does this in
 the book a few times, and you can use this as inspiration.
 
+```{r}
+
+
+```
+
 ## Task 3: Statistics
 
 \- Run **multiple linear regression**s to **test the conditional
 independencies** **implied by your DAG**. Make sure to avoid backdoor
 paths. See that the linear model shows the conditional independencies
 implied by your DAG, implying that the data and the DAG are compatible
-(if the linear model doesn\'t show the conditional independencies
-implied by the DAG, the data and the DAG doesn\'t fit).
+(if the linear model doesn't show the conditional independencies implied
+by the DAG, the data and the DAG doesn't fit).
 
 ## Task 4: Messing it up
 
 \- Try and **deliberately have an open back door path** and see if you
 can get wrong inference.
 
-\- Try and deliberately **simulate some data that doesn\'t fit the
-DAG**, or **create a new DAG that doesn\'t fit the data**.
+\- Try and deliberately **simulate some data that doesn't fit the DAG**,
+or **create a new DAG that doesn't fit the data**.
 
 \- Use the same approach as above to **show that the DAG is wrong** (by
-showing that conditional independencies don\'t exist in the data, for
+showing that conditional independencies don't exist in the data, for
 example).
 
-## Peter\'s perfectly optimal and extremely interesting example
+## Peter's perfectly optimal and extremely interesting example
 
-*In a galaxy far, far away\...*
+*In a galaxy far, far away...*
 
 *It is a period of civil wars in the galaxy. A brave alliance of
 underground freedom fighters has challenged the tyranny and oppression
@@ -135,7 +245,8 @@ more optimally suppress freedom in the Galaxy).*
 
 *You are that student.*
 
-We assume that the probability of a solar system joining the rebellion depends on\
+We assume that the probability of a solar system joining the rebellion
+depends on\
 - how many rebellion sympathizers there is in the system (more rebels
 -\> higher probability of joining the rebellion)\
 - how scared people are in the system (more scared -\> lower probability
@@ -165,5 +276,4 @@ Crime levels depend on
 \- number of planets recently destroyed by the Death Star (more planets
 destroyed -\> less crime)
 
-And so on\....
-
+And so on....
