@@ -291,24 +291,27 @@ by the DAG, the data and the DAG doesn't fit).
 
 
 
-
+### Testing the conditional independencies
 ```{r}
-#### test the conditional independencies
-
+######### MODEL 1 ################
 # crn_ _||_ grm_ | fc_m, sntz
-model1<- quap(
+model1 <- quap(
     alist(
-        D ~ dnorm( mu , sigma ) ,
-        mu <- a + bM*M + bA*A ,
+        infected_std ~ dnorm( mu , sigma ) ,
+        mu <- a + bFaceMask*face_mask_std + bGermLevel*germ_std + bSanitize*sanitizing_std ,
         a ~ dnorm( 0 , 0.2 ) ,
-        bM ~ dnorm( 0 , 0.5 ) ,
-        bA ~ dnorm( 0 , 0.5 ) ,
+        bGermLevel ~ dnorm( 0 , 0.5 ) ,
+        bFaceMask ~ dnorm( 0 , 0.5 ) ,
+        bSanitize ~ dnorm( 0 , 0.5 ) ,
         sigma ~ dexp( 1 )
-    ) , data = d )
-precis( m5.3 )
+    ) , data = df )
+
+precis( model1 )
+
+plot(precis( model1 ))
 
 
-
+######### MODEL 2 ################
 #crn_ _||_ pst_ | grm_
 model2<- quap(
     alist(
@@ -320,30 +323,60 @@ model2<- quap(
         sigma ~ dexp( 1 )
     ) , data = df )
 precis( model2)
+plot(coeftab(model2), par=c("bInfected", "bGermLevel" ))
 
-
-plot(coeftab(model2), par=c("bCoronaFear", "bGermLevel" ))
-
-
+######### MODEL 3 ################
 #crn_ _||_ pst_ | fc_m, sntz
+model3<- quap(
+    alist(
+        corona_fear_std ~ dnorm( mu , sigma ) ,
+        mu <- a + bInfected * infected_std  + bFaceMask * face_mask_std + bSanitizing * sanitizing_std,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bInfected ~ dnorm( 0 , 1 ),
+        bFaceMask ~ dnorm( 0, 1 ),
+        bSanitizing~ dnorm( 0 , 1 ),
+        sigma ~ dexp( 1 )
+    ) , data = df )
+
+precis( model3)
+
+#plot(coeftab(model3), par=c("bInfected", "bGermLevel", "bSanitizing" ))
+
+plot(precis(model3))
 
 
-
+######### MODEL 4 ################
 #fc_m _||_ pst_ | grm_
+model4<- quap(
+    alist(
+        face_mask_std ~ dnorm( mu , sigma ) ,
+        mu <- a + bInfected*infected_std  + bGermLevel*germ_std,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bInfected ~ dnorm( 0 , 1 ) ,
+        bGermLevel~ dnorm( 0 , 1 ),
+        sigma ~ dexp( 1 )
+    ) , data = df )
+precis( model4)
+plot(coeftab(model4), par=c("bInfected", "bGermLevel" ))
 
-
-
+######### MODEL 5 ################
 #fc_m _||_ sntz | crn_
 
 
+######### MODEL 6 ################
 #pst_ _||_ sntz | grm_
+model6<- quap(
+    alist(
+        infected_std ~ dnorm( mu , sigma ) ,
+        mu <- a + bSanitizing*sanitizing_std  + bGermLevel*germ_std,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bSanitizing ~ dnorm( 0 , 1 ) ,
+        bGermLevel~ dnorm( 0 , 1 ),
+        sigma ~ dexp( 1 )
+    ) , data = df )
+precis( model6)
 
-
-devtools::install_github("stan-dev/cmdstanr")
-install.packages(c("coda","mvtnorm","devtools","loo","dagitty"))
-devtools::install_github("rmcelreath/rethinking")
-
-pacman::p_load(rethinking)
+plot(precis(model6))
 
 ```
 
