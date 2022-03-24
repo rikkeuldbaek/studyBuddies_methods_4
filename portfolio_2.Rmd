@@ -7,8 +7,6 @@ editor_options:
     wrap: 72
 ---
 
-EMMA WAS HERE
-
 -   *Type:* Group assignment
 -   *Due:* 3 April 2022, 23:59
 
@@ -75,16 +73,6 @@ dag_corona<- dagitty( "dag {
 }")
 
 
-#DAG corona
-dag_corona_1<- dagitty( "dag {
-    corona_fear -> sanitizing
-    sanitizing-> germ_level
-    face_mask -> germ_level
-    corona_fear -> face_mask
-    germ_level -> positive_test
-}")
-
-
 coordinates(dag_corona) <- list( x=c(Corona_Fear =0,Face_Mask =-1, Sanitizing =0, Germ_Level=-1, Posive_Test= -1) , y=c(Corona_Fear =0,Face_Mask =0, Sanitizing = 1, Germ_Level=1, Posive_Test=2) )
 
 
@@ -142,6 +130,8 @@ adjustmentSets(dag_corona,exposure="corona_fear", outcome="positive_test")
 ```
 
 *OBS: nothing here = No backdoors to shut (no confounding paths between Corona Fear and Infected)*
+
+Chris: our input is CF (predictor, our intervention), our outcome is (infected). We don't have any backdoor paths, all paths are causal. If FM was a collider, it would be a common cause/confound that we would have to account for (hold constant) to close the backdown. We could aadd something that affects both FM and Germ_lvl. To have the total causal effect, we only need CF and Inf in out model (if we include FM and S, the coefficient for CF would just return the prior. Tge estimate for htis coefficient would be its own prior).
 
 *You can ask your computer to reproduce this analysis, to analyze the graph and find the necessary variables to control for in order to block the backdoor. The dagitty R package provides adjustmentSets for this purpose*
 
@@ -208,6 +198,31 @@ fulfilled, you can falsify your DAG - but you can't prove; you can only
 say \*"This DAG is compatible with the data - there may be other
 DAGs"\*.
 
+##########################################################################################
+##########################################################################################
+
+p(FM)= S(CF)
+
+CF is a continuum: as the fear increases, the probability of putting on mask increases. HOW do we simulate it? We can sim fear as normally distributed(0,1) which would give us a Gaussian. Then u say that whether a person puts on mask or not (FM) is rbern (1, sCP)). 
+
+P(FM) = 1/1+exp(CP). That you use!!!
+
+s(P
+
+Sigmoid transformation (from min if to if), but prob can only be from 0 to 1. 
+
+sCF (sigmoid transformation )
+
+GL ~ rnorm(mu, sigma)
+
+mu = b0+b1x1+b2x2
+
+continuous –> bernomial (you translate to probability)
+
+##########################################################################################
+##########################################################################################
+
+
 \- Find the full list of **Markov equivalent** DAGS. Use daggity's
 function `equivalentGraphs()`.
 
@@ -220,6 +235,8 @@ conditional independencies as our dag_corona has.
 ```{r}
 equivalentDAGs(dag_corona)
 ```
+
+Chris: We will get back the prior if we try to predict one thing from the other
 
 ## Task 2: The data
 
@@ -247,15 +264,12 @@ Binomial
 ```{r}
 #simulating variables:
 corona_fear <- rbeta(1000, 2, 5)#we assume skewedness (more people are not affraid, less people are super affraid)
-hist(corona_fear)
-mean(corona_fear)
 
 #runif(1000, min= 0, max=100) #corona fear on a scale from 0 -100 (0= not being scared & 100= being scared)
 
-face_mask <-  rbinom(1000, size= 1, prob= 0.5) # 1000 = antal observations, 1 = antal trials per observation, 0.5 = euqal probability for 0 and 1 at each trial
+facemask <- rbern(1000, 1/(1+exp(corona_fear))) #rbern(n, prob) # prob = A vector of likelihood of FM given CF.
 
-sanitizing <-   rpois(1000, 7)  # Sanitizing on a count scale. lambda = average number of events per interval
-#hvordan gør vi den her afhængig af corona fear
+sanitizing <- exp(corona_fear)
 
 germ_level <-  rnorm(1000, mean=3500 , sd= 1000)
   
@@ -266,6 +280,51 @@ df <- tibble(germ_level, sanitizing, infected, face_mask, corona_fear)
 
 
 ```
+
+```{r test chunk}
+
+# Come up with a ground true 
+
+# Simulating variables:
+corona_fear <- rbeta(1000, 2, 5)#we assume skewedness (more people are not affraid, less people are super affraid)
+hist(corona_fear)
+mean(corona_fear)
+
+# Runif(1000, min= 0, max=100) #corona fear on a scale from 0 -100 (0= not being scared & 100= being scared)
+
+#face_mask <-  rbinom(1000, size= 1, prob= 0.5) # 1000 = antal observations, 1 = antal trials per observation, 0.5 = euqal probability for 0 and 1 at each trial
+
+facemask <- rbern(1000, 1/(1+exp(corona_fear))) #rbern(n, prob) # prob = A vector of likelihood of FM given CF.
+
+lambda_alpha ~ rexp(1)
+lambda_cf <- lambda_alpha + (.5*corona_fear)*corona_fear
+
+sanitizing <- dpois(1000, lambda_cf)  # Sanitizing on a count scale. lambda = average number of events per interval
+hist(sanitizing)
+
+# Hvordan gør vi den her afhængig af corona fear
+germ_level <-  rnorm(1000, mean=3500 , sd= 1000)
+  
+infected <-  rbinom(1000, size= 1, prob= 0.3) #probability??? # (OBS)
+
+# creating df
+df <- tibble(germ_level, sanitizing, infected, face_mask, corona_fear)
+```
+Sanitize as exponentially related to corona fear
+
+200 is max count sanitise a day!
+
+sanitise = b * a^x, hvor a > 0 
+
+sanitise_count = ax+bx^2 
+
+x = CF
+
+a = ?
+
+b = ?
+
+
 
 *Standardizing variables*
 
