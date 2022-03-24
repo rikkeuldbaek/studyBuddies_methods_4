@@ -62,12 +62,10 @@ steps.\
 <http://dagitty.net/dags.html> )
 
 ```{r}
-
 pacman::p_load(usethis,dplyr, tidyverse, ggplot2, rstan, dagitty,ggdag)
 library(rethinking)
 
 #DAG corona
-
 dag_corona<- dagitty( "dag {
     corona_fear -> sanitizing
     sanitizing-> germ_level
@@ -76,12 +74,38 @@ dag_corona<- dagitty( "dag {
     germ_level -> positive_test
 }")
 
+
+#DAG corona
+dag_corona_1<- dagitty( "dag {
+    corona_fear -> sanitizing
+    sanitizing-> germ_level
+    face_mask -> germ_level
+    corona_fear -> face_mask
+    germ_level -> positive_test
+}")
+
+
 coordinates(dag_corona) <- list( x=c(Corona_Fear =0,Face_Mask =-1, Sanitizing =0, Germ_Level=-1, Posive_Test= -1) , y=c(Corona_Fear =0,Face_Mask =0, Sanitizing = 1, Germ_Level=1, Posive_Test=2) )
 
 
 drawdag(dag_corona)
 
+#more beautiful plot
 #ggdag(dag_corona, layout="nicely")+theme_dag_blank()  # another layout
+#smoking_ca_dag <- dagify(cardiacarrest ~ cholesterol,
+#       cholesterol ~ smoking + weight,
+#       smoking ~ unhealthy,
+#       weight ~ unhealthy,
+#       labels = c("cardiacarrest" = "Cardiac\n Arrest", 
+#                  "smoking" = "Smoking",
+#                  "cholesterol" = "Cholesterol",
+#                  "unhealthy" = "Unhealthy\n Lifestyle",
+#                  "weight" = "Weight"),
+#       latent = "unhealthy",
+#       exposure = "smoking",
+#       outcome = "cardiacarrest")
+
+#ggdag(smoking_ca_dag, text = FALSE, use_labels = "label")
 ```
 
 \- Find **elemental forms of variable relations** in the DAG (i.e.,
@@ -115,10 +139,19 @@ function `adjustmentSets()`.
 ```{r}
 # Shutting the backdoor - analyzing the graph to block the backdoor
 adjustmentSets(dag_corona,exposure="corona_fear", outcome="positive_test")
-
 ```
 
-OBS: nothing here
+*OBS: nothing here = No backdoors to shut (no confounding paths between Corona Fear and Infected)*
+
+*You can ask your computer to reproduce this analysis, to analyze the graph and find the necessary variables to control for in order to block the backdoor. The dagitty R package provides adjustmentSets for this purpose*
+
+In order to shut the backdoor. 
+Here’s the recipe:
+(1) List all of the paths connecting X (the potential cause of interest) and Y (the out- come).
+(2) Classify each path by whether it is open or closed. A path is open unless it contains a collider.
+(3) Classify each path by whether it is a backdoor path. A backdoor path has an arrow entering X.
+(4) If there are any backdoor paths that are also open, decide which variable(s) to con- dition on to close it.
+Let’s consider some examples.
 
 \- Find out which **conditional independencies** the DAG implies. First
 with the mind, then with daggity's function
@@ -147,7 +180,6 @@ Collider
 ```{r}
 # Deriving our DAG’s conditional independencies
 impliedConditionalIndependencies(dag_corona)
-
 ```
 
 test crn\_ *\|\|* grm\_ \| fc_m, sntz *CF and G are independent of each
@@ -187,7 +219,6 @@ conditional independencies as our dag_corona has.
 
 ```{r}
 equivalentDAGs(dag_corona)
-
 ```
 
 ## Task 2: The data
@@ -197,10 +228,54 @@ this. A simple way is just to sample one variable from a normal
 distribution which has another variable as mean. McElreath does this in
 the book a few times, and you can use this as inspiration.
 
+
+*Corona Fear*
+Normal
+
+*Face Mask*
+Binomial
+
+*Sanitizing*
+Poisson 
+
+*Germ Level*
+Normal
+
+*Infected*
+Binomial
+
 ```{r}
+#simulating variables:
+corona_fear <- rbeta(1000, 2, 5)#we assume skewedness (more people are not affraid, less people are super affraid)
+hist(corona_fear)
+mean(corona_fear)
+
+#runif(1000, min= 0, max=100) #corona fear on a scale from 0 -100 (0= not being scared & 100= being scared)
+
+face_mask <-  rbinom(1000, size= 1, prob= 0.5) # 1000 = antal observations, 1 = antal trials per observation, 0.5 = euqal probability for 0 and 1 at each trial
+
+sanitizing <-   rpois(1000, 7)  # Sanitizing on a count scale. lambda = average number of events per interval
+#hvordan gør vi den her afhængig af corona fear
+
+germ_level <-  rnorm(1000, mean=3500 , sd= 1000)
+  
+infected <-  rbinom(1000, size= 1, prob= 0.3) #probability??? # (OBS)
+
+# creating df
+df <- tibble(germ_level, sanitizing, infected, face_mask, corona_fear) 
 
 
 ```
+
+*Standardizing variables*
+
+```{r}
+
+df <- df %>% 
+  mutate(germ_std=scale(germ_level),sanitizing_std= scale(sanitizing),  infected_std=scale(infected),face_mask_std=scale(face_mask ), corona_fear_std= scale(corona_fear))
+
+```
+
 
 ## Task 3: Statistics
 
@@ -210,6 +285,68 @@ paths. See that the linear model shows the conditional independencies
 implied by your DAG, implying that the data and the DAG are compatible
 (if the linear model doesn't show the conditional independencies implied
 by the DAG, the data and the DAG doesn't fit).
+
+
+
+
+
+
+
+```{r}
+#### test the conditional independencies
+
+# crn_ _||_ grm_ | fc_m, sntz
+model1<- quap(
+    alist(
+        D ~ dnorm( mu , sigma ) ,
+        mu <- a + bM*M + bA*A ,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bM ~ dnorm( 0 , 0.5 ) ,
+        bA ~ dnorm( 0 , 0.5 ) ,
+        sigma ~ dexp( 1 )
+    ) , data = d )
+precis( m5.3 )
+
+
+
+#crn_ _||_ pst_ | grm_
+model2<- quap(
+    alist(
+        corona_fear_std ~ dnorm( mu , sigma ) ,
+        mu <- a + bInfected*infected_std  + bGermLevel*germ_std,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bInfected ~ dnorm( 0 , 1 ) ,
+        bGermLevel~ dnorm( 0 , 1 ),
+        sigma ~ dexp( 1 )
+    ) , data = df )
+precis( model2)
+
+
+plot(coeftab(model2), par=c("bCoronaFear", "bGermLevel" ))
+
+
+#crn_ _||_ pst_ | fc_m, sntz
+
+
+
+#fc_m _||_ pst_ | grm_
+
+
+
+#fc_m _||_ sntz | crn_
+
+
+#pst_ _||_ sntz | grm_
+
+
+devtools::install_github("stan-dev/cmdstanr")
+install.packages(c("coda","mvtnorm","devtools","loo","dagitty"))
+devtools::install_github("rmcelreath/rethinking")
+
+pacman::p_load(rethinking)
+
+```
+
 
 ## Task 4: Messing it up
 
