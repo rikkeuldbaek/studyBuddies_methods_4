@@ -40,11 +40,21 @@ two variables (an outcome and a predictor) that you would like to
 investigate the relation between. If in doubt, you **can be inspired by
 Peter's amazing example** on the next page.
 
-In our example, we wish to investigate the effect of corona fear (CF) on
-the variable Infected (a binary variable taking either the value 0 or
-1).
+*In our example, we wish to investigate the effect of the predictor corona fear (CF) on*
+*the outcome variable Infected (a binary variable taking either the value 0 or 1)*
 
-Predictor: corona fear (continuous variable) Outcome variable: infection
+*Since Denmark reported it's first case of COVID-19 contraction on the 27th February 2020 (STPS, 2020),* 
+*COVID-19 and its development has been subject to extensive coverage in Danish media.*
+*News media has a critical role in times of epidemic crises since*
+*exposure to as well as consumption of information in times of pandemics*
+*may alter people’s perception and provoke behavioural changes that*
+*might ultimately impact the evolution and further spread of the virus (Gozzi et al., 2020).* 
+
+*We therefore expect that corona fear is a sensible predictor of whether one*
+*gets infected or not, assuming that the degree to which one fears*
+*COVID determines the precautions and actions one take to avoid getting infected.* 
+
+*Predictor: corona fear (continuous variable) Outcome variable: infection
 (0/1)
 
 Sanitising: continuous variable FM variable: do you wear face mask
@@ -78,22 +88,34 @@ coordinates(dag_corona) <- list( x=c(Corona_Fear =0,Face_Mask =-1, Sanitizing =0
 
 drawdag(dag_corona)
 
-#more beautiful plot
-#ggdag(dag_corona, layout="nicely")+theme_dag_blank()  # another layout
-#smoking_ca_dag <- dagify(cardiacarrest ~ cholesterol,
-#       cholesterol ~ smoking + weight,
-#       smoking ~ unhealthy,
-#       weight ~ unhealthy,
-#       labels = c("cardiacarrest" = "Cardiac\n Arrest", 
-#                  "smoking" = "Smoking",
-#                  "cholesterol" = "Cholesterol",
-#                  "unhealthy" = "Unhealthy\n Lifestyle",
-#                  "weight" = "Weight"),
-#       latent = "unhealthy",
-#       exposure = "smoking",
-#       outcome = "cardiacarrest")
+```
 
-#ggdag(smoking_ca_dag, text = FALSE, use_labels = "label")
+```{r}
+library(ggdag)
+
+pretty_dag <- dagify(INF ~ GL,
+      GL ~ FM + S,
+      FM ~ CF,
+      S ~ CF,
+      labels = c("INF" = "Infected",
+                 "FM" = "Face Mask",
+                 "GL" = "Germ Level",
+                 "CF" = "Corona Fear",
+                 "S" = "Sanitising"),
+      latent = c("FM","GL","S"), # latent variable = hidden variable
+      exposure = "CF",
+      outcome = "INF")
+
+ggdag(pretty_dag, text = FALSE, use_labels = "label", stylized=FALSE)+remove_grid()+remove_axes()
+
+```
+
+```{r}
+ggdag_paths(pretty_dag, text = FALSE, use_labels = "label", shadow = TRUE)
+```
+
+```{r}
+ggdag_adjustment_set(pretty_dag, text = FALSE, use_labels = "label", shadow = TRUE)
 ```
 
 \- Find **elemental forms of variable relations** in the DAG (i.e.,
@@ -129,19 +151,30 @@ function `adjustmentSets()`.
 adjustmentSets(dag_corona,exposure="corona_fear", outcome="positive_test")
 ```
 
-*OBS: nothing here = No backdoors to shut (no confounding paths between Corona Fear and Infected)*
+*OBS: nothing here = No backdoors to shut (no confounding paths between
+Corona Fear and Infected)*
 
-Chris: our input is CF (predictor, our intervention), our outcome is (infected). We don't have any backdoor paths, all paths are causal. If FM was a collider, it would be a common cause/confound that we would have to account for (hold constant) to close the backdown. We could aadd something that affects both FM and Germ_lvl. To have the total causal effect, we only need CF and Inf in out model (if we include FM and S, the coefficient for CF would just return the prior. Tge estimate for htis coefficient would be its own prior).
+Chris: our input is CF (predictor, our intervention), our outcome is
+(infected). We don't have any backdoor paths, all paths are causal. If
+FM was a collider, it would be a common cause/confound that we would
+have to account for (hold constant) to close the backdown. We could aadd
+something that affects both FM and Germ_lvl. To have the total causal
+effect, we only need CF and Inf in out model (if we include FM and S,
+the coefficient for CF would just return the prior. Tge estimate for
+htis coefficient would be its own prior).
 
-*You can ask your computer to reproduce this analysis, to analyze the graph and find the necessary variables to control for in order to block the backdoor. The dagitty R package provides adjustmentSets for this purpose*
+*You can ask your computer to reproduce this analysis, to analyze the
+graph and find the necessary variables to control for in order to block
+the backdoor. The dagitty R package provides adjustmentSets for this
+purpose*
 
-In order to shut the backdoor. 
-Here’s the recipe:
-(1) List all of the paths connecting X (the potential cause of interest) and Y (the out- come).
-(2) Classify each path by whether it is open or closed. A path is open unless it contains a collider.
-(3) Classify each path by whether it is a backdoor path. A backdoor path has an arrow entering X.
-(4) If there are any backdoor paths that are also open, decide which variable(s) to con- dition on to close it.
-Let’s consider some examples.
+In order to shut the backdoor. Here's the recipe: (1) List all of the
+paths connecting X (the potential cause of interest) and Y (the out-
+come). (2) Classify each path by whether it is open or closed. A path is
+open unless it contains a collider. (3) Classify each path by whether it
+is a backdoor path. A backdoor path has an arrow entering X. (4) If
+there are any backdoor paths that are also open, decide which
+variable(s) to con- dition on to close it. Let's consider some examples.
 
 \- Find out which **conditional independencies** the DAG implies. First
 with the mind, then with daggity's function
@@ -198,30 +231,35 @@ fulfilled, you can falsify your DAG - but you can't prove; you can only
 say \*"This DAG is compatible with the data - there may be other
 DAGs"\*.
 
-##########################################################################################
-##########################################################################################
+########################################################################################## 
+
+########################################################################################## 
 
 p(FM)= S(CF)
 
-CF is a continuum: as the fear increases, the probability of putting on mask increases. HOW do we simulate it? We can sim fear as normally distributed(0,1) which would give us a Gaussian. Then u say that whether a person puts on mask or not (FM) is rbern (1, sCP)). 
+CF is a continuum: as the fear increases, the probability of putting on
+mask increases. HOW do we simulate it? We can sim fear as normally
+distributed(0,1) which would give us a Gaussian. Then u say that whether
+a person puts on mask or not (FM) is rbern (1, sCP)).
 
 P(FM) = 1/1+exp(CP). That you use!!!
 
 s(P
 
-Sigmoid transformation (from min if to if), but prob can only be from 0 to 1. 
+Sigmoid transformation (from min if to if), but prob can only be from 0
+to 1.
 
 sCF (sigmoid transformation )
 
-GL ~ rnorm(mu, sigma)
+GL \~ rnorm(mu, sigma)
 
 mu = b0+b1x1+b2x2
 
-continuous –> bernomial (you translate to probability)
+continuous --\> bernomial (you translate to probability)
 
-##########################################################################################
-##########################################################################################
+########################################################################################## 
 
+########################################################################################## 
 
 \- Find the full list of **Markov equivalent** DAGS. Use daggity's
 function `equivalentGraphs()`.
@@ -236,7 +274,8 @@ conditional independencies as our dag_corona has.
 equivalentDAGs(dag_corona)
 ```
 
-Chris: We will get back the prior if we try to predict one thing from the other
+Chris: We will get back the prior if we try to predict one thing from
+the other
 
 ## Task 2: The data
 
@@ -245,21 +284,15 @@ this. A simple way is just to sample one variable from a normal
 distribution which has another variable as mean. McElreath does this in
 the book a few times, and you can use this as inspiration.
 
+*Corona Fear* Normal
 
-*Corona Fear*
-Normal
+*Face Mask* Binomial
 
-*Face Mask*
-Binomial
+*Sanitizing* Poisson
 
-*Sanitizing*
-Poisson 
+*Germ Level* Normal
 
-*Germ Level*
-Normal
-
-*Infected*
-Binomial
+*Infected* Binomial
 
 ```{r}
 #simulating variables:
@@ -310,21 +343,20 @@ infected <-  rbinom(1000, size= 1, prob= 0.3) #probability??? # (OBS)
 # creating df
 df <- tibble(germ_level, sanitizing, infected, face_mask, corona_fear)
 ```
+
 Sanitize as exponentially related to corona fear
 
 200 is max count sanitise a day!
 
-sanitise = b * a^x, hvor a > 0 
+sanitise = b \* a\^x, hvor a \> 0
 
-sanitise_count = ax+bx^2 
+sanitise_count = ax+bx\^2
 
 x = CF
 
 a = ?
 
 b = ?
-
-
 
 *Standardizing variables*
 
@@ -335,7 +367,6 @@ df <- df %>%
 
 ```
 
-
 ## Task 3: Statistics
 
 \- Run **multiple linear regression**s to **test the conditional
@@ -345,12 +376,8 @@ implied by your DAG, implying that the data and the DAG are compatible
 (if the linear model doesn't show the conditional independencies implied
 by the DAG, the data and the DAG doesn't fit).
 
-
-
-
-
-
 ### Testing the conditional independencies
+
 ```{r}
 ######### MODEL 1 ################
 # crn_ _||_ grm_ | fc_m, sntz
@@ -439,7 +466,6 @@ plot(precis(model6))
 
 ```
 
-
 ## Task 4: Messing it up
 
 \- Try and **deliberately have an open back door path** and see if you
@@ -507,3 +533,18 @@ Crime levels depend on
 destroyed -\> less crime)
 
 And so on....
+
+
+
+
+# References
+
+STPS, S. F. P. (2020, February 27). Første dansker er bekræftet smittet med COVID-19 (ny
+coronavirus)—Styrelsen for Patientsikkerhed. https://stps.dk/da/nyheder/2020/foerste-
+dansker-er-bekraeftet-smittet-med-covid-19-ny-coronavirus/
+
+
+Gozzi, N., Tizzani, M., Starnini, M., Ciulla, F., Paolotti, D., Panisson, A., & Perra, N. (2020). 
+Collective Response to Media Coverage of the COVID-19 Pandemic on Reddit and Wikipedia: Mixed-Methods Analysis. Journal of Medical Internet Research, 22(10), e21597. https://doi.org/10.2196/21597
+
+
