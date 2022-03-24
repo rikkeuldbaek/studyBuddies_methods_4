@@ -54,12 +54,11 @@ Peter's amazing example** on the next page.
 *gets infected or not, assuming that the degree to which one fears*
 *COVID determines the precautions and actions one take to avoid getting infected.* 
 
-*Predictor: corona fear (continuous variable) Outcome variable: infection
-(0/1)
-
-Sanitising: continuous variable FM variable: do you wear face mask
-according to the national guidelines? (binary variable; 0/1) Germ level:
-continuous
+*Predictor: corona fear (continuous variable)* 
+*Outcome variable: infection (0/1)*
+*Sanitising: continuous variable* 
+*FM variable: do you wear face mask according to the national guidelines? (for the sake of simplicity, we assume that this is a binary variable taking either the value 0 or 1, meaning that you either always where a face mark when the guidelines advises you to do that (1) and never wear it in situations were the national guidelines advises it. We do acknowledge that is a false dichotomy)*
+*Germ level: the level of vira germs in your body. We have no biological evidence for a variable of this type, but for the sake of simplicity we assumes that the level of germs present in your body can be describes as a normally distributed continuous variable*
 
 \- **Make a DAG** for the phenomenon. Make it medium complicated: that
 means, make sure there are some different kinds of relations (see next
@@ -139,7 +138,8 @@ Collider
 
 (S -\> GERM \<- FM)
 
-*OBS: ADD DESCRIPTION OF WHY WE BELIEVE THE RELATIONS ABOVE EXIST*.
+
+*We would expect*
 
 \- Find out **what variables to include (and not include)** in a
 multiple linear regression to avoid 'back door' (AKA non-causal) paths.
