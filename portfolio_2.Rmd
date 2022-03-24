@@ -139,7 +139,24 @@ Collider
 (S -\> GERM \<- FM)
 
 
-*We would expect*
+*We inspect the variable FM to depend on your corona fear, as we assume that a person who is really scared of COVID would be much more *
+*likely to strictly follow the national guidelines, whereas a person who didn't fear corona at all would reversely be much less likely to*
+*wear a face mask although the national guidelines advises one to do it* 
+
+*The same goes for the relation between corona fear and sanitising. We expect a person with a high corona fear to have a much higher*
+*daily frequency of sanitising than a person with no corona fear at all*.
+
+*We would expect germ level to depend on whether you wear face mask when advised to or not, as* 
+*the face mask (at least partly) prevents germs from entering your mouth and nose*.
+
+*The same goes for the relation between germ level and sanitising, as*
+*sanitising works by killing most germs, preventing them from entering your body*
+
+*Lastly, we expect the level of germs to determine whether you are infected or not. With a low level of germs,*
+*one would expect your immune system would be strong enough to fight the few germs that have entered your body.*
+*However, if the level of germs in your body is extremely high, it might exceed the capacity of your immune system*
+*to fight back, resulting in you getting infected.*
+
 
 \- Find out **what variables to include (and not include)** in a
 multiple linear regression to avoid 'back door' (AKA non-causal) paths.
