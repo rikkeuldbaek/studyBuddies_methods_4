@@ -86,7 +86,6 @@ coordinates(dag_corona) <- list( x=c(Corona_Fear =0,Face_Mask =-1, Sanitizing =0
 
 
 drawdag(dag_corona)
-
 ```
 
 ```{r}
@@ -487,9 +486,26 @@ plot(precis(model6))
 
 \- Try and **deliberately have an open back door path** and see if you
 can get wrong inference.
+```{r}
+# Twisted DAG corona
+twisted_dag_corona <- dagitty( "dag {
+    corona_fear -> sanitizing
+    sanitizing-> germ_level
+    OCD -> sanitizing
+    OCD -> corona_fear
+    face_mask -> germ_level
+    corona_fear -> face_mask
+    germ_level -> positive_test
+}")
+
+# Shutting the backdoor - analyzing the graph to block the backdoor
+adjustmentSets(twisted_dag_corona, exposure="corona_fear", outcome="positive_test")
+```
+Now, OCD becomes a backdoor and a confounding variable. The path is confounded, because there are two paths connecting corona_fear and infection: (1) CF → INF and (2) CF ← OCD → INF. In this case, controlling for OCD ruins inference as it does not belong to the causal path from corona fear to corona infected. Why? Because if only the 2 path (as descibed above) existed and we decided to change CF it wouldn't affect INF. To account for this, we could isolate OCD (the confounder) by adding it to the model by conditioning on it. When conditioning, we're analyzing the values of the other variables for a given value of the conditioned variable. This would block the second path and thus allow for inclusion of OCD in the model. 
 
 \- Try and deliberately **simulate some data that doesn't fit the DAG**,
 or **create a new DAG that doesn't fit the data**.
+
 
 \- Use the same approach as above to **show that the DAG is wrong** (by
 showing that conditional independencies don't exist in the data, for
