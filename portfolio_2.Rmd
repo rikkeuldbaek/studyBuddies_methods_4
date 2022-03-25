@@ -316,7 +316,7 @@ corona_fear <- rbeta(1000, 2, 5)#we assume skewedness (more people are not affra
 
 #runif(1000, min= 0, max=100) #corona fear on a scale from 0 -100 (0= not being scared & 100= being scared)
 
-facemask <- rbern(1000, 1/(1+exp(corona_fear))) #rbern(n, prob) # prob = A vector of likelihood of FM given CF.
+face_mask <- rbern(1000, 1/(1+exp(corona_fear))) #rbern(n, prob) # prob = A vector of likelihood of FM given CF.
 
 sanitizing <- exp(corona_fear)
 
@@ -343,7 +343,7 @@ mean(corona_fear)
 
 #face_mask <-  rbinom(1000, size= 1, prob= 0.5) # 1000 = antal observations, 1 = antal trials per observation, 0.5 = euqal probability for 0 and 1 at each trial
 
-facemask <- rbern(1000, 1/(1+exp(corona_fear))) #rbern(n, prob) # prob = A vector of likelihood of FM given CF.
+face_mask <- rbern(1000, 1/(1+exp(corona_fear))) #rbern(n, prob) # prob = A vector of likelihood of FM given CF.
 
 lambda_alpha ~ rexp(1)
 lambda_cf <- lambda_alpha + (.5*corona_fear)*corona_fear
@@ -397,20 +397,18 @@ by the DAG, the data and the DAG doesn't fit).
 ```{r}
 ######### MODEL 1 ################
 # crn_ _||_ grm_ | fc_m, sntz
-model1 <- quap(
+model1<- quap(
     alist(
-        infected_std ~ dnorm( mu , sigma ) ,
-        mu <- a + bFaceMask*face_mask_std + bGermLevel*germ_std + bSanitize*sanitizing_std ,
+        corona_fear_std ~ dnorm( mu , sigma ) ,
+        mu <- a  + bGermLevel*germ_std + bFaceMask*face_mask_std + bSanitizing*sanitizing_std,
         a ~ dnorm( 0 , 0.2 ) ,
-        bGermLevel ~ dnorm( 0 , 0.5 ) ,
-        bFaceMask ~ dnorm( 0 , 0.5 ) ,
-        bSanitize ~ dnorm( 0 , 0.5 ) ,
+        bGermLevel~ dnorm( 0 , 1 ),
+        bFaceMask~ dnorm( 0 , 1 ) ,
+        bSanitizing ~ dnorm( 0 , 1 ),
         sigma ~ dexp( 1 )
     ) , data = df )
-
-precis( model1 )
-
-plot(precis( model1 ))
+plot(coeftab(model1), pars=c("bFaceMask", "bGermLevel" , " bSanitizing" ))
+plot(coeftab(model1),by.model=TRUE )
 
 
 ######### MODEL 2 ################
@@ -429,7 +427,7 @@ plot(coeftab(model2), par=c("bInfected", "bGermLevel" ))
 
 ######### MODEL 3 ################
 #crn_ _||_ pst_ | fc_m, sntz
-model3<- quap(
+model3 <- quap(
     alist(
         corona_fear_std ~ dnorm( mu , sigma ) ,
         mu <- a + bInfected * infected_std  + bFaceMask * face_mask_std + bSanitizing * sanitizing_std,
@@ -437,7 +435,7 @@ model3<- quap(
         bInfected ~ dnorm( 0 , 1 ),
         bFaceMask ~ dnorm( 0, 1 ),
         bSanitizing~ dnorm( 0 , 1 ),
-        sigma ~ dexp( 1 )
+        sigma ~ dexp( 1 ) # OBS : why exp?
     ) , data = df )
 
 precis( model3)
@@ -463,7 +461,19 @@ plot(coeftab(model4), par=c("bInfected", "bGermLevel" ))
 
 ######### MODEL 5 ################
 #fc_m _||_ sntz | crn_
+#fc_m _||_ sntz | crn_ 
+model5<- quap(
+    alist(
+        face_mask_std ~ dnorm( mu , sigma ) ,
+        mu <- a + bSanitizing*sanitizing_std  + bCoronaFear*corona_fear_std,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bSanitizing ~ dnorm( 0 , 1 ) ,
+        bCoronaFear~ dnorm( 0 , 1 ),
+        sigma ~ dexp( 1 )
+    ) , data = df )
 
+precis( model5)
+plot(coeftab(model5), par=c("bSanitizing", "bCoronaFear" ))
 
 ######### MODEL 6 ################
 #pst_ _||_ sntz | grm_
@@ -481,6 +491,8 @@ precis( model6)
 plot(precis(model6))
 
 ```
+OBS: Describe results
+
 
 ## Task 4: Messing it up
 
@@ -495,21 +507,168 @@ twisted_dag_corona <- dagitty( "dag {
     OCD -> corona_fear
     face_mask -> germ_level
     corona_fear -> face_mask
-    germ_level -> positive_test
+    germ_level -> infected
 }")
 
+# Plotting the DAG
+coordinates(twisted_dag_corona) <- list( 
+  x=c(corona_fear =0, OCD = .3, face_mask =-.5, sanitizing =0, germ_level=-.5, infected= -.5) , 
+  y=c(corona_fear =0, OCD = .5, face_mask =0, sanitizing = 1, germ_level=1, infected=2) )
+
+drawdag(twisted_dag_corona)
+
 # Shutting the backdoor - analyzing the graph to block the backdoor
-adjustmentSets(twisted_dag_corona, exposure="corona_fear", outcome="positive_test")
+adjustmentSets(twisted_dag_corona, exposure="corona_fear", outcome="infected")
 ```
 Now, OCD becomes a backdoor and a confounding variable. The path is confounded, because there are two paths connecting corona_fear and infection: (1) CF → INF and (2) CF ← OCD → INF. In this case, controlling for OCD ruins inference as it does not belong to the causal path from corona fear to corona infected. Why? Because if only the 2 path (as descibed above) existed and we decided to change CF it wouldn't affect INF. To account for this, we could isolate OCD (the confounder) by adding it to the model by conditioning on it. When conditioning, we're analyzing the values of the other variables for a given value of the conditioned variable. This would block the second path and thus allow for inclusion of OCD in the model. 
 
 \- Try and deliberately **simulate some data that doesn't fit the DAG**,
 or **create a new DAG that doesn't fit the data**.
+```{r}
+#simulating variables:
+
+corona_fear_w <- rbeta(1000, 2, 5)#we assume skewedness (more people are not affraid, less people are super affraid)
+
+face_mask_w <- rbinom(1000, 1, .5)
+
+sanitizing_w <- rnorm(1000, mean = 10, sd = 10)
+
+germ_level_w <-  rnorm(1000, mean=3500 , sd= 1000)
+  
+infected_w <-  rbinom(1000, size= 1, prob= 0.3) #probability??? # (OBS)
+
+OCD_w <- rbinom(1000, 5, .01) # 1/100 as OCD
+
+# creating df
+df_w <- tibble(germ_level_w, sanitizing_w, infected_w, face_mask_w, corona_fear_w, OCD_w) 
+```
+
+### Standardizing variables
+```{r}
+df_w <- df_w %>% 
+  mutate(germ_std_w=scale(germ_level_w),sanitizing_std_w= scale(sanitizing_w),  infected_std_w=scale(infected_w),face_mask_std_w=scale(face_mask_w), corona_fear_std_w= scale(corona_fear_w), OCD_std_w = scale(OCD_w))
+```
+
+### Implied conditional independencies
+```{r}
+impliedConditionalIndependencies(twisted_dag_corona)
+```
+
+OCD _||_ fc_m | crn_
+OCD _||_ grm_ | fc_m, sntz
+OCD _||_ grm_ | crn_, sntz
+OCD _||_ infc | grm_
+OCD _||_ infc | fc_m, sntz
+OCD _||_ infc | crn_, sntz
 
 
 \- Use the same approach as above to **show that the DAG is wrong** (by
 showing that conditional independencies don't exist in the data, for
-example).
+example)
+
+### Testing implied conditional independencies
+```{r}
+######### MODEL 1 wrong ################
+# OCD _||_ fc_m | crn_
+model1_w <- quap(
+    alist(
+        OCD_std_w ~ dnorm( mu , sigma ) ,
+        mu <- a + bFaceMask*face_mask_std_w + bCoronaFear*corona_fear_std_w,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bCoronaFear ~ dnorm( 0 , 0.5 ) ,
+        bFaceMask ~ dnorm( 0 , 0.5 ) ,
+        sigma ~ dexp( 1 ) # OBS : why exp? It doesn't change anything changing it to dnorm or dunif
+    ) , data = df_w )
+
+precis( model1_w )
+
+plot(precis( model1_w ))
+
+######### MODEL 2 wrong ################
+# crn_ _||_ grm_ | fc_m, sntz
+# OCD _||_ grm_ | fc_m, sntz
+model2_w <- quap(
+    alist(
+        OCD_std_w ~ dnorm( mu , sigma ) ,
+        mu <- a + bGermLevel*germ_std_w + bFaceMask*face_mask_std_w + bSanitize*sanitizing_std_w ,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bGermLevel ~ dnorm( 0 , 0.5 ) ,
+        bFaceMask ~ dnorm( 0 , 0.5 ) ,
+        bSanitize ~ dunif( 0 , 0.5 ) ,
+        sigma ~ dexp( 1 ) # OBS : why exp? It doesn't change anything changing it to dnorm or dunif
+    ) , data = df_w )
+
+precis( model2_w )
+
+plot(precis( model2_w ))
+
+#### MODEL 3
+#OCD || grm_ | crn_, sntz
+model3_w<- quap(
+    alist(
+        OCD_std_w ~ dnorm( mu , sigma ) ,
+        mu <- a  + bGermLevel*germ_std_w + bCoronaFear*corona_fear_std_w+ bSanitizing*sanitizing_std_w,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bGermLevel~ dnorm( 0 , 1 ) ,
+        bCoronaFear~ dnorm( 0 , 1 ),
+        bSanitizing ~ dnorm( 0 , 1 ),
+        sigma ~ dexp( 1 )
+    ) , data = df_w )
+precis(model3_w)
+
+plot(coeftab(model3_w),by.model=TRUE )
+
+#### MODEL 4
+#OCD || infc | grm_
+model4_w<- quap(
+    alist(
+        OCD_std_w ~ dnorm( mu , sigma ) ,
+        mu <- a  + bInfected*infected_std_w + bGermLevel*germ_std_w,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bInfected ~ dnorm( 0 , 1 ),
+        bGermLevel~ dnorm( 0 , 1 ) ,
+        sigma ~ dexp( 1 )
+    ) , data = df_w )
+
+precis(model4_w)
+plot(coeftab(model4_w),by.model=TRUE )
+
+
+#### MODEL 5
+# OCD _||_ infc | fc_m, sntz # 5
+
+model5_w<- quap(
+    alist(
+        OCD_std_w ~ dnorm( mu , sigma ) ,
+        mu <- a + bInfected*infected_std_w  + bFace_mask*face_mask_std_w + bSanitizing*sanitizing_std_w,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bInfected~ dnorm( 0 , 1 ) ,
+        bFace_mask~ dnorm( 0 , 1 ),
+        bSanitizing~ dnorm( 0 , 1 ),
+        sigma ~ dexp( 1 )
+    ) , data = df_w )
+precis( model5_w)
+
+plot(precis(model5_w))
+
+#### MODEL 6
+# OCD _||_ infc | crn_, sntz # 6
+model6_w<- quap(
+    alist(
+        OCD_std_w ~ dnorm( mu , sigma ) ,
+        mu <- a + bInfected*infected_std_w  + bCorona_fear*corona_fear_std_w + bSanitizing*sanitizing_std_w,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bInfected~ dnorm( 0 , 1 ) ,
+        bCorona_fear~ dnorm( 0 , 1 ),
+        bSanitizing~ dnorm( 0 , 1 ),
+        sigma ~ dexp( 1 )
+    ) , data = df_w )
+precis( model6_w)
+
+plot(precis(model6_w))
+```
+
+
 
 ## Peter's perfectly optimal and extremely interesting example
 
