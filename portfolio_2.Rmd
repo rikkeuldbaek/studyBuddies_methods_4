@@ -314,96 +314,46 @@ the book a few times, and you can use this as inspiration.
 set.seed(1)
 N= 1000
 
-
 #simulating variables:
 
 ##### CORONA FEAR
-corona_fear <-rbeta(N, 3,6) #we assume skewedness (more people are not afraid, less people are super afraid)
-
+corona_fear <-rnorm(N, mean=50, sd=10)
 
 ##### FACE MASK
-face_mask <- rbern(N, 1/(1+exp(corona_fear))) # prob = A vector of likelihood of Face Mask given Corona Fear.
+face_mask <- rbinom(N, size =1, prob= inv_logit(scale(corona_fear)))
+
 
 ##### SANITIZING
-sanitizing <- log(corona_fear+0.1)
-
-#sanitizing <- rlnorm(N, meanlog=3, sdlog = corona_fear)
-
-#sanitizing <- exp(corona_fear+2)
-#sanitizing <- rlnorm(N, meanlog = (corona_fear+1.5))# Sanitizing is dependent on Corona Fear
-hist(sanitizing)
-
-# creating df
-df <- tibble(germ_level, sanitizing, infected, face_mask, corona_fear) 
+sanitizing <-  rnorm(N, mean= corona_fear-20, sd=2)
 
 
-# sanitizing and corona fear plotted
-ggplot(df, aes(x=sanitizing, y=corona_fear, colour = face_mask))+
-  geom_point(geom = "point", shape = 19)
-
-#eah: one simple way is to use values from one variable as the mean in the normal distribution from which another variable is drawn. That makes them correlated. McElreath does this in the boon a few times when he simulates data :)
-```
-
-
-```{r}
 ##### GERM LEVEL
-germ_level <-  rnorm(N, mean=3500 , sd= 10) # germ-level is dependent on face mask and sanitizing
-  
+#germ_level <-  rnorm(N, mean= 3500 (-sanitizing*(face_mask)), sd=2)
+#germ_level <-  rnorm(N, mean=(-sanitizing*(face_mask))*0.5, sd=1000) #FM =1 ingen facemask FM=2 facemask
 
-##### INFECTED
-infected <-  rbinom(N, size= 1, prob= 0.3) #probability??? # (OBS)
-
+#germ_level <-  rnorm(N, mean= 3500 - ((sanitizing*100)* (1+face_mask)), sd=100) #giver 2 slopes for mask
 
 
+df$face_mask <- (ifelse(df$face_mask == "0", 2, 1)) #2 is now NOT FM and 1 is FM
+germ_level <-  rnorm(N, mean= 5000 - ((sanitizing*10)* (2+face_mask)), sd=100)# SER FUCKING RIGTIGT UD
 
-########################## LAURA
-N <- 1000
 
-set.seed(101)
+plot(germ_level, sanitizing)
 
-# Breakfast (80 percent of canteen-customers have had breakfast on the given day)
-B <- sample(0:1, size=N, replace=TRUE, prob=c(.20,.80))
- 
-# Deliciousness 
-D <- sample(1:5, size=N, replace=TRUE, prob=c(.05, .1, .2, .35, .3))
 
 # Hunger (dependent on B and D)
 H <- rnorm(N, mean = 6 + D - (5*B), sd = 2)
 
-# Grumbling of stomach (dependet on H)
-G <- rbinom(N, size = 1, prob = (0.05 + H*0.01))
+##### INFECTED
+infected <-  rbinom(N, size= 1, prob= inv_logit(scale(germ_level))) #probability??? # (OBS)
 
-# Amount of food on plate (dependent D, H and G)
-A <- rlnorm(N, meanlog = (D + 0.3*H + 0.8*G))
-
-```
-
-```{r test chunk}
-
-# Come up with a ground true 
-
-# Simulating variables:
-corona_fear <- rbeta(1000, 2, 5)#we assume skewedness (more people are not affraid, less people are super affraid)
-
-# Runif(1000, min= 0, max=100) #corona fear on a scale from 0 -100 (0= not being scared & 100= being scared)
-
-#face_mask <-  rbinom(1000, size= 1, prob= 0.5) # 1000 = antal observations, 1 = antal trials per observation, 0.5 = euqal probability for 0 and 1 at each trial
-
-face_mask <- rbern(1000, 1/(1+exp(corona_fear))) #rbern(n, prob) # prob = A vector of likelihood of FM given CF.
-
-#lambda_alpha ~ rexp(1)
-#lambda_cf <- lambda_alpha + (.5*corona_fear)*corona_fear
-
-sanitizing <- dpois(1000, lambda_cf)  # Sanitizing on a count scale. lambda = average number of events per interval
-hist(sanitizing)
-
-# Hvordan gør vi den her afhængig af corona fear
-germ_level <-  rnorm(1000, mean=3500 , sd= 1000)
-  
-infected <-  rbinom(1000, size= 1, prob= 0.3) #probability??? # (OBS)
 
 # creating df
-df <- tibble(germ_level, sanitizing, infected, face_mask, corona_fear)
+df <- tibble(germ_level, sanitizing, infected, face_mask, corona_fear) 
+
+#eah: one simple way is to use values from one variable as the mean in the normal distribution from which another variable is drawn. That makes them correlated. McElreath does this in the boon a few times when he simulates data :)
+
+
 ```
 
 Sanitize as exponentially related to corona fear
