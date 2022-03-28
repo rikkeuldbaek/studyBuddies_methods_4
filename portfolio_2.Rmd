@@ -7,8 +7,6 @@ editor_options:
     wrap: 72
 ---
 
-EMMA WAS HERE
-
 -   *Type:* Group assignment
 -   *Due:* 3 April 2022, 23:59
 
@@ -42,16 +40,25 @@ two variables (an outcome and a predictor) that you would like to
 investigate the relation between. If in doubt, you **can be inspired by
 Peter's amazing example** on the next page.
 
-In our example, we wish to investigate the effect of corona fear (CF) on
-the variable Infected (a binary variable taking either the value 0 or
-1).
+*In our example, we wish to investigate the effect of the predictor corona fear (CF) on*
+*the outcome variable Infected (a binary variable taking either the value 0 or 1)*
 
-Predictor: corona fear (continuous variable) Outcome variable: infection
-(0/1)
+*Since Denmark reported it's first case of COVID-19 contraction on the 27th February 2020 (STPS, 2020),* 
+*COVID-19 and its development has been subject to extensive coverage in Danish media.*
+*News media has a critical role in times of epidemic crises since*
+*exposure to as well as consumption of information in times of pandemics*
+*may alter people’s perception and provoke behavioural changes that*
+*might ultimately impact the evolution and further spread of the virus (Gozzi et al., 2020).* 
 
-Sanitising: continuous variable FM variable: do you wear face mask
-according to the national guidelines? (binary variable; 0/1) Germ level:
-continuous
+*We therefore expect that corona fear is a sensible predictor of whether one*
+*gets infected or not, assuming that the degree to which one fears*
+*COVID determines the precautions and actions one take to avoid getting infected.* 
+
+*Predictor: corona fear (continuous variable)* 
+*Outcome variable: infection (0/1)*
+*Sanitising: continuous variable* 
+*FM variable: do you wear face mask according to the national guidelines? (for the sake of simplicity, we assume that this is a binary variable taking either the value 0 or 1, meaning that you either always where a face mark when the guidelines advises you to do that (1) and never wear it in situations were the national guidelines advises it. We do acknowledge that is a false dichotomy)*
+*Germ level: the level of vira germs in your body. We have no biological evidence for a variable of this type, but for the sake of simplicity we assumes that the level of germs present in your body can be describes as a normally distributed continuous variable*
 
 \- **Make a DAG** for the phenomenon. Make it medium complicated: that
 means, make sure there are some different kinds of relations (see next
@@ -75,37 +82,38 @@ dag_corona<- dagitty( "dag {
 }")
 
 
-#DAG corona
-dag_corona_1<- dagitty( "dag {
-    corona_fear -> sanitizing
-    sanitizing-> germ_level
-    face_mask -> germ_level
-    corona_fear -> face_mask
-    germ_level -> positive_test
-}")
-
-
 coordinates(dag_corona) <- list( x=c(Corona_Fear =0,Face_Mask =-1, Sanitizing =0, Germ_Level=-1, Posive_Test= -1) , y=c(Corona_Fear =0,Face_Mask =0, Sanitizing = 1, Germ_Level=1, Posive_Test=2) )
 
 
 drawdag(dag_corona)
+```
 
-#more beautiful plot
-#ggdag(dag_corona, layout="nicely")+theme_dag_blank()  # another layout
-#smoking_ca_dag <- dagify(cardiacarrest ~ cholesterol,
-#       cholesterol ~ smoking + weight,
-#       smoking ~ unhealthy,
-#       weight ~ unhealthy,
-#       labels = c("cardiacarrest" = "Cardiac\n Arrest", 
-#                  "smoking" = "Smoking",
-#                  "cholesterol" = "Cholesterol",
-#                  "unhealthy" = "Unhealthy\n Lifestyle",
-#                  "weight" = "Weight"),
-#       latent = "unhealthy",
-#       exposure = "smoking",
-#       outcome = "cardiacarrest")
+```{r}
+library(ggdag)
 
-#ggdag(smoking_ca_dag, text = FALSE, use_labels = "label")
+pretty_dag <- dagify(INF ~ GL,
+      GL ~ FM + S,
+      FM ~ CF,
+      S ~ CF,
+      labels = c("INF" = "Infected",
+                 "FM" = "Face Mask",
+                 "GL" = "Germ Level",
+                 "CF" = "Corona Fear",
+                 "S" = "Sanitising"),
+      latent = c("FM","GL","S"), # latent variable = hidden variable
+      exposure = "CF",
+      outcome = "INF")
+
+ggdag(pretty_dag, text = FALSE, use_labels = "label", stylized=FALSE)+remove_grid()+remove_axes()
+
+```
+
+```{r}
+ggdag_paths(pretty_dag, text = FALSE, use_labels = "label", shadow = TRUE)
+```
+
+```{r}
+ggdag_adjustment_set(pretty_dag, text = FALSE, use_labels = "label", shadow = TRUE)
 ```
 
 \- Find **elemental forms of variable relations** in the DAG (i.e.,
@@ -129,7 +137,25 @@ Collider
 
 (S -\> GERM \<- FM)
 
-*OBS: ADD DESCRIPTION OF WHY WE BELIEVE THE RELATIONS ABOVE EXIST*.
+
+*We inspect the variable FM to depend on your corona fear, as we assume that a person who is really scared of COVID would be much more *
+*likely to strictly follow the national guidelines, whereas a person who didn't fear corona at all would reversely be much less likely to*
+*wear a face mask although the national guidelines advises one to do it* 
+
+*The same goes for the relation between corona fear and sanitising. We expect a person with a high corona fear to have a much higher*
+*daily frequency of sanitising than a person with no corona fear at all*.
+
+*We would expect germ level to depend on whether you wear face mask when advised to or not, as* 
+*the face mask (at least partly) prevents germs from entering your mouth and nose*.
+
+*The same goes for the relation between germ level and sanitising, as*
+*sanitising works by killing most germs, preventing them from entering your body*
+
+*Lastly, we expect the level of germs to determine whether you are infected or not. With a low level of germs,*
+*one would expect your immune system would be strong enough to fight the few germs that have entered your body.*
+*However, if the level of germs in your body is extremely high, it might exceed the capacity of your immune system*
+*to fight back, resulting in you getting infected.*
+
 
 \- Find out **what variables to include (and not include)** in a
 multiple linear regression to avoid 'back door' (AKA non-causal) paths.
@@ -141,17 +167,30 @@ function `adjustmentSets()`.
 adjustmentSets(dag_corona,exposure="corona_fear", outcome="positive_test")
 ```
 
-*OBS: nothing here = No backdoors to shut (no confounding paths between Corona Fear and Infected)*
+*OBS: nothing here = No backdoors to shut (no confounding paths between
+Corona Fear and Infected)*
 
-*You can ask your computer to reproduce this analysis, to analyze the graph and find the necessary variables to control for in order to block the backdoor. The dagitty R package provides adjustmentSets for this purpose*
+Chris: our input is CF (predictor, our intervention), our outcome is
+(infected). We don't have any backdoor paths, all paths are causal. If
+FM was a collider, it would be a common cause/confound that we would
+have to account for (hold constant) to close the backdown. We could aadd
+something that affects both FM and Germ_lvl. To have the total causal
+effect, we only need CF and Inf in out model (if we include FM and S,
+the coefficient for CF would just return the prior. Tge estimate for
+htis coefficient would be its own prior).
 
-In order to shut the backdoor. 
-Here’s the recipe:
-(1) List all of the paths connecting X (the potential cause of interest) and Y (the out- come).
-(2) Classify each path by whether it is open or closed. A path is open unless it contains a collider.
-(3) Classify each path by whether it is a backdoor path. A backdoor path has an arrow entering X.
-(4) If there are any backdoor paths that are also open, decide which variable(s) to con- dition on to close it.
-Let’s consider some examples.
+*You can ask your computer to reproduce this analysis, to analyze the
+graph and find the necessary variables to control for in order to block
+the backdoor. The dagitty R package provides adjustmentSets for this
+purpose*
+
+In order to shut the backdoor. Here's the recipe: (1) List all of the
+paths connecting X (the potential cause of interest) and Y (the out-
+come). (2) Classify each path by whether it is open or closed. A path is
+open unless it contains a collider. (3) Classify each path by whether it
+is a backdoor path. A backdoor path has an arrow entering X. (4) If
+there are any backdoor paths that are also open, decide which
+variable(s) to con- dition on to close it. Let's consider some examples.
 
 \- Find out which **conditional independencies** the DAG implies. First
 with the mind, then with daggity's function
@@ -208,6 +247,36 @@ fulfilled, you can falsify your DAG - but you can't prove; you can only
 say \*"This DAG is compatible with the data - there may be other
 DAGs"\*.
 
+########################################################################################## 
+
+########################################################################################## 
+
+p(FM)= S(CF)
+
+CF is a continuum: as the fear increases, the probability of putting on
+mask increases. HOW do we simulate it? We can sim fear as normally
+distributed(0,1) which would give us a Gaussian. Then u say that whether
+a person puts on mask or not (FM) is rbern (1, sCP)).
+
+P(FM) = 1/1+exp(CP). That you use!!!
+
+s(P
+
+Sigmoid transformation (from min if to if), but prob can only be from 0
+to 1.
+
+sCF (sigmoid transformation )
+
+GL \~ rnorm(mu, sigma)
+
+mu = b0+b1x1+b2x2
+
+continuous --\> bernomial (you translate to probability)
+
+########################################################################################## 
+
+########################################################################################## 
+
 \- Find the full list of **Markov equivalent** DAGS. Use daggity's
 function `equivalentGraphs()`.
 
@@ -221,6 +290,9 @@ conditional independencies as our dag_corona has.
 equivalentDAGs(dag_corona)
 ```
 
+Chris: We will get back the prior if we try to predict one thing from
+the other
+
 ## Task 2: The data
 
 \- **Simulate some data that fits the DAG.** There are many ways to do
@@ -228,34 +300,25 @@ this. A simple way is just to sample one variable from a normal
 distribution which has another variable as mean. McElreath does this in
 the book a few times, and you can use this as inspiration.
 
+*Corona Fear* Normal
 
-*Corona Fear*
-Normal
+*Face Mask* Binomial
 
-*Face Mask*
-Binomial
+*Sanitizing* Poisson
 
-*Sanitizing*
-Poisson 
+*Germ Level* Normal
 
-*Germ Level*
-Normal
-
-*Infected*
-Binomial
+*Infected* Binomial
 
 ```{r}
 #simulating variables:
 corona_fear <- rbeta(1000, 2, 5)#we assume skewedness (more people are not affraid, less people are super affraid)
-hist(corona_fear)
-mean(corona_fear)
 
 #runif(1000, min= 0, max=100) #corona fear on a scale from 0 -100 (0= not being scared & 100= being scared)
 
-face_mask <-  rbinom(1000, size= 1, prob= 0.5) # 1000 = antal observations, 1 = antal trials per observation, 0.5 = euqal probability for 0 and 1 at each trial
+face_mask <- rbern(1000, 1/(1+exp(corona_fear))) #rbern(n, prob) # prob = A vector of likelihood of FM given CF.
 
-sanitizing <-   rpois(1000, 7)  # Sanitizing on a count scale. lambda = average number of events per interval
-#hvordan gør vi den her afhængig af corona fear
+sanitizing <- exp(corona_fear)
 
 germ_level <-  rnorm(1000, mean=3500 , sd= 1000)
   
@@ -267,6 +330,50 @@ df <- tibble(germ_level, sanitizing, infected, face_mask, corona_fear)
 
 ```
 
+```{r test chunk}
+
+# Come up with a ground true 
+
+# Simulating variables:
+corona_fear <- rbeta(1000, 2, 5)#we assume skewedness (more people are not affraid, less people are super affraid)
+hist(corona_fear)
+mean(corona_fear)
+
+# Runif(1000, min= 0, max=100) #corona fear on a scale from 0 -100 (0= not being scared & 100= being scared)
+
+#face_mask <-  rbinom(1000, size= 1, prob= 0.5) # 1000 = antal observations, 1 = antal trials per observation, 0.5 = euqal probability for 0 and 1 at each trial
+
+face_mask <- rbern(1000, 1/(1+exp(corona_fear))) #rbern(n, prob) # prob = A vector of likelihood of FM given CF.
+
+lambda_alpha ~ rexp(1)
+lambda_cf <- lambda_alpha + (.5*corona_fear)*corona_fear
+
+sanitizing <- dpois(1000, lambda_cf)  # Sanitizing on a count scale. lambda = average number of events per interval
+hist(sanitizing)
+
+# Hvordan gør vi den her afhængig af corona fear
+germ_level <-  rnorm(1000, mean=3500 , sd= 1000)
+  
+infected <-  rbinom(1000, size= 1, prob= 0.3) #probability??? # (OBS)
+
+# creating df
+df <- tibble(germ_level, sanitizing, infected, face_mask, corona_fear)
+```
+
+Sanitize as exponentially related to corona fear
+
+200 is max count sanitise a day!
+
+sanitise = b \* a\^x, hvor a \> 0
+
+sanitise_count = ax+bx\^2
+
+x = CF
+
+a = ?
+
+b = ?
+
 *Standardizing variables*
 
 ```{r}
@@ -275,7 +382,6 @@ df <- df %>%
   mutate(germ_std=scale(germ_level),sanitizing_std= scale(sanitizing),  infected_std=scale(infected),face_mask_std=scale(face_mask ), corona_fear_std= scale(corona_fear))
 
 ```
-
 
 ## Task 3: Statistics
 
@@ -286,29 +392,26 @@ implied by your DAG, implying that the data and the DAG are compatible
 (if the linear model doesn't show the conditional independencies implied
 by the DAG, the data and the DAG doesn't fit).
 
-
-
-
-
-
+### Testing the conditional independencies
 
 ```{r}
-#### test the conditional independencies
-
+######### MODEL 1 ################
 # crn_ _||_ grm_ | fc_m, sntz
 model1<- quap(
     alist(
-        D ~ dnorm( mu , sigma ) ,
-        mu <- a + bM*M + bA*A ,
+        corona_fear_std ~ dnorm( mu , sigma ) ,
+        mu <- a  + bGermLevel*germ_std + bFaceMask*face_mask_std + bSanitizing*sanitizing_std,
         a ~ dnorm( 0 , 0.2 ) ,
-        bM ~ dnorm( 0 , 0.5 ) ,
-        bA ~ dnorm( 0 , 0.5 ) ,
+        bGermLevel~ dnorm( 0 , 1 ),
+        bFaceMask~ dnorm( 0 , 1 ) ,
+        bSanitizing ~ dnorm( 0 , 1 ),
         sigma ~ dexp( 1 )
-    ) , data = d )
-precis( m5.3 )
+    ) , data = df )
+plot(coeftab(model1), pars=c("bFaceMask", "bGermLevel" , " bSanitizing" ))
+plot(coeftab(model1),by.model=TRUE )
 
 
-
+######### MODEL 2 ################
 #crn_ _||_ pst_ | grm_
 model2<- quap(
     alist(
@@ -320,45 +423,252 @@ model2<- quap(
         sigma ~ dexp( 1 )
     ) , data = df )
 precis( model2)
+plot(coeftab(model2), par=c("bInfected", "bGermLevel" ))
 
-
-plot(coeftab(model2), par=c("bCoronaFear", "bGermLevel" ))
-
-
+######### MODEL 3 ################
 #crn_ _||_ pst_ | fc_m, sntz
+model3 <- quap(
+    alist(
+        corona_fear_std ~ dnorm( mu , sigma ) ,
+        mu <- a + bInfected * infected_std  + bFaceMask * face_mask_std + bSanitizing * sanitizing_std,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bInfected ~ dnorm( 0 , 1 ),
+        bFaceMask ~ dnorm( 0, 1 ),
+        bSanitizing~ dnorm( 0 , 1 ),
+        sigma ~ dexp( 1 ) # OBS : why exp?
+    ) , data = df )
+
+precis( model3)
+
+#plot(coeftab(model3), par=c("bInfected", "bGermLevel", "bSanitizing" ))
+
+plot(precis(model3))
 
 
-
+######### MODEL 4 ################
 #fc_m _||_ pst_ | grm_
+model4<- quap(
+    alist(
+        face_mask_std ~ dnorm( mu , sigma ) ,
+        mu <- a + bInfected*infected_std  + bGermLevel*germ_std,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bInfected ~ dnorm( 0 , 1 ) ,
+        bGermLevel~ dnorm( 0 , 1 ),
+        sigma ~ dexp( 1 )
+    ) , data = df )
+precis( model4)
+plot(coeftab(model4), par=c("bInfected", "bGermLevel" ))
 
-
-
+######### MODEL 5 ################
 #fc_m _||_ sntz | crn_
+#fc_m _||_ sntz | crn_ 
+model5<- quap(
+    alist(
+        face_mask_std ~ dnorm( mu , sigma ) ,
+        mu <- a + bSanitizing*sanitizing_std  + bCoronaFear*corona_fear_std,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bSanitizing ~ dnorm( 0 , 1 ) ,
+        bCoronaFear~ dnorm( 0 , 1 ),
+        sigma ~ dexp( 1 )
+    ) , data = df )
 
+precis( model5)
+plot(coeftab(model5), par=c("bSanitizing", "bCoronaFear" ))
 
+######### MODEL 6 ################
 #pst_ _||_ sntz | grm_
+model6<- quap(
+    alist(
+        infected_std ~ dnorm( mu , sigma ) ,
+        mu <- a + bSanitizing*sanitizing_std  + bGermLevel*germ_std,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bSanitizing ~ dnorm( 0 , 1 ) ,
+        bGermLevel~ dnorm( 0 , 1 ),
+        sigma ~ dexp( 1 )
+    ) , data = df )
+precis( model6)
 
-
-devtools::install_github("stan-dev/cmdstanr")
-install.packages(c("coda","mvtnorm","devtools","loo","dagitty"))
-devtools::install_github("rmcelreath/rethinking")
-
-pacman::p_load(rethinking)
+plot(precis(model6))
 
 ```
+OBS: Describe results
 
 
 ## Task 4: Messing it up
 
 \- Try and **deliberately have an open back door path** and see if you
 can get wrong inference.
+```{r}
+# Twisted DAG corona
+twisted_dag_corona <- dagitty( "dag {
+    corona_fear -> sanitizing
+    sanitizing-> germ_level
+    OCD -> sanitizing
+    OCD -> corona_fear
+    face_mask -> germ_level
+    corona_fear -> face_mask
+    germ_level -> infected
+}")
+
+# Plotting the DAG
+coordinates(twisted_dag_corona) <- list( 
+  x=c(corona_fear =0, OCD = .3, face_mask =-.5, sanitizing =0, germ_level=-.5, infected= -.5) , 
+  y=c(corona_fear =0, OCD = .5, face_mask =0, sanitizing = 1, germ_level=1, infected=2) )
+
+drawdag(twisted_dag_corona)
+
+# Shutting the backdoor - analyzing the graph to block the backdoor
+adjustmentSets(twisted_dag_corona, exposure="corona_fear", outcome="infected")
+```
+Now, OCD becomes a backdoor and a confounding variable. The path is confounded, because there are two paths connecting corona_fear and infection: (1) CF → INF and (2) CF ← OCD → INF. In this case, controlling for OCD ruins inference as it does not belong to the causal path from corona fear to corona infected. Why? Because if only the 2 path (as descibed above) existed and we decided to change CF it wouldn't affect INF. To account for this, we could isolate OCD (the confounder) by adding it to the model by conditioning on it. When conditioning, we're analyzing the values of the other variables for a given value of the conditioned variable. This would block the second path and thus allow for inclusion of OCD in the model. 
 
 \- Try and deliberately **simulate some data that doesn't fit the DAG**,
 or **create a new DAG that doesn't fit the data**.
+```{r}
+#simulating variables:
+
+corona_fear_w <- rbeta(1000, 2, 5)#we assume skewedness (more people are not affraid, less people are super affraid)
+
+face_mask_w <- rbinom(1000, 1, .5)
+
+sanitizing_w <- rnorm(1000, mean = 10, sd = 10)
+
+germ_level_w <-  rnorm(1000, mean=3500 , sd= 1000)
+  
+infected_w <-  rbinom(1000, size= 1, prob= 0.3) #probability??? # (OBS)
+
+OCD_w <- rbinom(1000, 5, .01) # 1/100 as OCD
+
+# creating df
+df_w <- tibble(germ_level_w, sanitizing_w, infected_w, face_mask_w, corona_fear_w, OCD_w) 
+```
+
+### Standardizing variables
+```{r}
+df_w <- df_w %>% 
+  mutate(germ_std_w=scale(germ_level_w),sanitizing_std_w= scale(sanitizing_w),  infected_std_w=scale(infected_w),face_mask_std_w=scale(face_mask_w), corona_fear_std_w= scale(corona_fear_w), OCD_std_w = scale(OCD_w))
+```
+
+### Implied conditional independencies
+```{r}
+impliedConditionalIndependencies(twisted_dag_corona)
+```
+
+OCD _||_ fc_m | crn_
+OCD _||_ grm_ | fc_m, sntz
+OCD _||_ grm_ | crn_, sntz
+OCD _||_ infc | grm_
+OCD _||_ infc | fc_m, sntz
+OCD _||_ infc | crn_, sntz
+
 
 \- Use the same approach as above to **show that the DAG is wrong** (by
 showing that conditional independencies don't exist in the data, for
-example).
+example)
+
+### Testing implied conditional independencies
+```{r}
+######### MODEL 1 wrong ################
+# OCD _||_ fc_m | crn_
+model1_w <- quap(
+    alist(
+        OCD_std_w ~ dnorm( mu , sigma ) ,
+        mu <- a + bFaceMask*face_mask_std_w + bCoronaFear*corona_fear_std_w,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bCoronaFear ~ dnorm( 0 , 0.5 ) ,
+        bFaceMask ~ dnorm( 0 , 0.5 ) ,
+        sigma ~ dexp( 1 ) # OBS : why exp? It doesn't change anything changing it to dnorm or dunif
+    ) , data = df_w )
+
+precis( model1_w )
+
+plot(precis( model1_w ))
+
+######### MODEL 2 wrong ################
+# crn_ _||_ grm_ | fc_m, sntz
+# OCD _||_ grm_ | fc_m, sntz
+model2_w <- quap(
+    alist(
+        OCD_std_w ~ dnorm( mu , sigma ) ,
+        mu <- a + bGermLevel*germ_std_w + bFaceMask*face_mask_std_w + bSanitize*sanitizing_std_w ,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bGermLevel ~ dnorm( 0 , 0.5 ) ,
+        bFaceMask ~ dnorm( 0 , 0.5 ) ,
+        bSanitize ~ dunif( 0 , 0.5 ) ,
+        sigma ~ dexp( 1 ) # OBS : why exp? It doesn't change anything changing it to dnorm or dunif
+    ) , data = df_w )
+
+precis( model2_w )
+
+plot(precis( model2_w ))
+
+#### MODEL 3
+#OCD || grm_ | crn_, sntz
+model3_w<- quap(
+    alist(
+        OCD_std_w ~ dnorm( mu , sigma ) ,
+        mu <- a  + bGermLevel*germ_std_w + bCoronaFear*corona_fear_std_w+ bSanitizing*sanitizing_std_w,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bGermLevel~ dnorm( 0 , 1 ) ,
+        bCoronaFear~ dnorm( 0 , 1 ),
+        bSanitizing ~ dnorm( 0 , 1 ),
+        sigma ~ dexp( 1 )
+    ) , data = df_w )
+precis(model3_w)
+
+plot(coeftab(model3_w),by.model=TRUE )
+
+#### MODEL 4
+#OCD || infc | grm_
+model4_w<- quap(
+    alist(
+        OCD_std_w ~ dnorm( mu , sigma ) ,
+        mu <- a  + bInfected*infected_std_w + bGermLevel*germ_std_w,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bInfected ~ dnorm( 0 , 1 ),
+        bGermLevel~ dnorm( 0 , 1 ) ,
+        sigma ~ dexp( 1 )
+    ) , data = df_w )
+
+precis(model4_w)
+plot(coeftab(model4_w),by.model=TRUE )
+
+
+#### MODEL 5
+# OCD _||_ infc | fc_m, sntz # 5
+
+model5_w<- quap(
+    alist(
+        OCD_std_w ~ dnorm( mu , sigma ) ,
+        mu <- a + bInfected*infected_std_w  + bFace_mask*face_mask_std_w + bSanitizing*sanitizing_std_w,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bInfected~ dnorm( 0 , 1 ) ,
+        bFace_mask~ dnorm( 0 , 1 ),
+        bSanitizing~ dnorm( 0 , 1 ),
+        sigma ~ dexp( 1 )
+    ) , data = df_w )
+precis( model5_w)
+
+plot(precis(model5_w))
+
+#### MODEL 6
+# OCD _||_ infc | crn_, sntz # 6
+model6_w<- quap(
+    alist(
+        OCD_std_w ~ dnorm( mu , sigma ) ,
+        mu <- a + bInfected*infected_std_w  + bCorona_fear*corona_fear_std_w + bSanitizing*sanitizing_std_w,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bInfected~ dnorm( 0 , 1 ) ,
+        bCorona_fear~ dnorm( 0 , 1 ),
+        bSanitizing~ dnorm( 0 , 1 ),
+        sigma ~ dexp( 1 )
+    ) , data = df_w )
+precis( model6_w)
+
+plot(precis(model6_w))
+```
+
+
 
 ## Peter's perfectly optimal and extremely interesting example
 
@@ -415,3 +725,18 @@ Crime levels depend on
 destroyed -\> less crime)
 
 And so on....
+
+
+
+
+# References
+
+STPS, S. F. P. (2020, February 27). Første dansker er bekræftet smittet med COVID-19 (ny
+coronavirus)—Styrelsen for Patientsikkerhed. https://stps.dk/da/nyheder/2020/foerste-
+dansker-er-bekraeftet-smittet-med-covid-19-ny-coronavirus/
+
+
+Gozzi, N., Tizzani, M., Starnini, M., Ciulla, F., Paolotti, D., Panisson, A., & Perra, N. (2020). 
+Collective Response to Media Coverage of the COVID-19 Pandemic on Reddit and Wikipedia: Mixed-Methods Analysis. Journal of Medical Internet Research, 22(10), e21597. https://doi.org/10.2196/21597
+
+
