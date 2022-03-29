@@ -312,7 +312,7 @@ the book a few times, and you can use this as inspiration.
 
 ```{r}
 set.seed(1)
-N= 1000
+N= 10000
 
 #simulating variables:
 
@@ -322,27 +322,11 @@ corona_fear <-rnorm(N, mean=50, sd=10)
 ##### FACE MASK
 face_mask <- rbinom(N, size =1, prob= inv_logit(scale(corona_fear)))
 
-
 ##### SANITIZING
 sanitizing <-  rnorm(N, mean= corona_fear-20, sd=2)
 
-
 ##### GERM LEVEL
-#germ_level <-  rnorm(N, mean= 3500 (-sanitizing*(face_mask)), sd=2)
-#germ_level <-  rnorm(N, mean=(-sanitizing*(face_mask))*0.5, sd=1000) #FM =1 ingen facemask FM=2 facemask
-
-#germ_level <-  rnorm(N, mean= 3500 - ((sanitizing*100)* (1+face_mask)), sd=100) #giver 2 slopes for mask
-
-
-df$face_mask <- (ifelse(df$face_mask == "0", 2, 1)) #2 is now NOT FM and 1 is FM
-germ_level <-  rnorm(N, mean= 5000 - ((sanitizing*10)* (2+face_mask)), sd=100)# SER FUCKING RIGTIGT UD
-
-
-plot(germ_level, sanitizing)
-
-
-# Hunger (dependent on B and D)
-H <- rnorm(N, mean = 6 + D - (5*B), sd = 2)
+germ_level <-  rnorm(N, mean= 5000 - ((sanitizing*10)*(1+face_mask)), sd=100)
 
 ##### INFECTED
 infected <-  rbinom(N, size= 1, prob= inv_logit(scale(germ_level))) #probability??? # (OBS)
@@ -350,10 +334,6 @@ infected <-  rbinom(N, size= 1, prob= inv_logit(scale(germ_level))) #probability
 
 # creating df
 df <- tibble(germ_level, sanitizing, infected, face_mask, corona_fear) 
-
-#eah: one simple way is to use values from one variable as the mean in the normal distribution from which another variable is drawn. That makes them correlated. McElreath does this in the boon a few times when he simulates data :)
-
-
 ```
 
 Sanitize as exponentially related to corona fear
