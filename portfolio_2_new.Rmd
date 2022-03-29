@@ -32,6 +32,13 @@ DAGGIN, simulating and modelling.
 
 Looking forward !
 
+
+
+```{r setup, include=FALSE}
+pacman::p_load(usethis,dplyr, tidyverse, ggplot2, rstan, dagitty,ggdag)
+library(rethinking)
+```
+
 ## Task 1: The DAG
 
 \- **Come up with an** incredibly interesting and scientifically
@@ -56,9 +63,10 @@ Peter's amazing example** on the next page.
 
 *Predictor: corona fear (continuous variable)* 
 *Outcome variable: infection (0/1)*
-*Sanitising: continuous variable* 
+*Sanitizing: continuous variable* 
 *FM variable: do you wear face mask according to the national guidelines? (for the sake of simplicity, we assume that this is a binary variable taking either the value 0 or 1, meaning that you either always where a face mark when the guidelines advises you to do that (1) and never wear it in situations were the national guidelines advises it. We do acknowledge that is a false dichotomy)*
 *Germ level: the level of vira germs in your body. We have no biological evidence for a variable of this type, but for the sake of simplicity we assumes that the level of germs present in your body can be describes as a normally distributed continuous variable*
+*OCD variable: A categorical variable that takes a value between 1 and 5, which reflects the severity of the OCD condition (Obsessive Compulsive Disorder). 1 being no OCD symptoms at all and 5 being very severe OCD*
 
 \- **Make a DAG** for the phenomenon. Make it medium complicated: that
 means, make sure there are some different kinds of relations (see next
@@ -68,52 +76,25 @@ steps.\
 **Code it** in dagitty (this is a nice tool:
 <http://dagitty.net/dags.html> )
 
-```{r}
-pacman::p_load(usethis,dplyr, tidyverse, ggplot2, rstan, dagitty,ggdag)
-library(rethinking)
 
-#DAG corona
-dag_corona<- dagitty( "dag {
-    corona_fear -> sanitizing;
-    sanitizing-> germ_level;
-    face_mask -> germ_level;
-    corona_fear -> face_mask;
+```{r}
+# Twisted DAG corona
+dag_corona <- dagitty( "dag {
+    corona_fear -> sanitizing
+    sanitizing-> germ_level
+    OCD -> sanitizing
+    OCD -> corona_fear
+    face_mask -> germ_level
+    corona_fear -> face_mask
     germ_level -> infected
 }")
 
+# Plotting the DAG
 coordinates(dag_corona) <- list( 
-  x=c(corona_fear =0,face_mask =-1, sanitizing =0, germ_level=-1, infected= -1), 
-  y=c(corona_fear =0,face_mask =0, sanitizing = 1, germ_level=1, infected=2) )
+  x=c(corona_fear =-1, OCD = -3, face_mask =0, sanitizing =-2, germ_level=-1, infected= -1) , 
+  y=c(corona_fear =-1, OCD = -1, face_mask =0, sanitizing = 0, germ_level=1, infected=2) )
 
 drawdag(dag_corona)
-```
-
-```{r}
-library(ggdag)
-
-pretty_dag <- dagify(INF ~ GL,
-      GL ~ FM + S,
-      FM ~ CF,
-      S ~ CF,
-      labels = c("INF" = "Infected",
-                 "FM" = "Face Mask",
-                 "GL" = "Germ Level",
-                 "CF" = "Corona Fear",
-                 "S" = "Sanitising"),
-      latent = c("FM","GL","S"), # latent variable = hidden variable
-      exposure = "CF",
-      outcome = "INF")
-
-ggdag(pretty_dag, text = FALSE, use_labels = "label", stylized=FALSE)+remove_grid()+remove_axes()
-
-```
-
-```{r}
-ggdag_paths(pretty_dag, text = FALSE, use_labels = "label", shadow = TRUE)
-```
-
-```{r}
-ggdag_adjustment_set(pretty_dag, text = FALSE, use_labels = "label", shadow = TRUE)
 ```
 
 \- Find **elemental forms of variable relations** in the DAG (i.e.,
@@ -121,7 +102,7 @@ forks, pipes, colliders, and their descendants).
 
 Pipe
 
-(FM -\> GERM -\> INFECTED)
+(FM -\> GERM LEVEL -\> INFECTED)
 
 (Cf --\> FM --\> GERM)
 
@@ -129,16 +110,33 @@ Pipe
 
 (S --\> GERM --\> INFECTED)
 
+(OCD --\> CF --\> FM)   X
+
+
+
+(OCD --\> S --\> GERM LEVEL)
+
 Fork
 
 (S \<- CF -\> FM)
 
+(CF \<- OCD -\> S)
+
 Collider
 
-(S -\> GERM \<- FM)
+(S -\> GERM LEVEL \<- FM)
 
+(CF-\> S \<- OCD)
 
-*We inspect the variable FM to depend on your corona fear, as we assume that a person who is really scared of COVID would be much more *
+Descendant 
+
+(OCD --\> CF --\> FM, CF --\> S )
+
+*We expect OCD to affect your corona fear in such way that a higher level of OCD increase the level of corona fear.* 
+
+*A typical symptom of OCD is an abnormal fear of germs, which results in highly frequent use of sanitizer. Thus, we assume that the amount of sanitizing will increase with the level of OCD* (OBS)
+
+*We expect the variable FM to depend on your corona fear, as we assume that a person who is really scared of COVID would be much more *
 *likely to strictly follow the national guidelines, whereas a person who didn't fear corona at all would reversely be much less likely to*
 *wear a face mask although the national guidelines advises one to do it* 
 
@@ -157,6 +155,8 @@ Collider
 *to fight back, resulting in you getting infected.*
 
 
+
+
 \- Find out **what variables to include (and not include)** in a
 multiple linear regression to avoid 'back door' (AKA non-causal) paths.
 Do this first with your eyes and your mind. Then you can use dagitty's
@@ -167,8 +167,7 @@ function `adjustmentSets()`.
 adjustmentSets(dag_corona,exposure="corona_fear", outcome="infected")
 ```
 
-*OBS: nothing here = No backdoors to shut (no confounding paths between
-Corona Fear and Infected)*
+*OBS:  OCD as a backdoor
 
 Chris: our input is CF (predictor, our intervention), our outcome is
 (infected). We don't have any backdoor paths, all paths are causal. If
@@ -192,54 +191,33 @@ is a backdoor path. A backdoor path has an arrow entering X. (4) If
 there are any backdoor paths that are also open, decide which
 variable(s) to con- dition on to close it. Let's consider some examples.
 
+
+
 \- Find out which **conditional independencies** the DAG implies. First
 with the mind, then with daggity's function
 `impliedConditionalIndependencies()`.
 
-First, we find out which conditional independencies the DAG implies.
-
-Pipe
-
-(FM -\> GERM -\> INFECTED)
-
-(Cf --\> FM --\> GERM)
-
-(CF -\> S -\> GERM)
-
-(S --\> GERM --\> INFECTED)
-
-Fork
-
-(S \<- CF -\> FM)
-
-Collider
-
-(S -\> GERM \<- FM)
 
 ```{r}
 # Deriving our DAG’s conditional independencies
 impliedConditionalIndependencies(dag_corona)
 ```
    
-   
+
+    OCD _||_ fc_m | crn_
+    OCD _||_ grm_ | fc_m, sntz
+    OCD _||_ grm_ | crn_, sntz
+    OCD _||_ infc | grm_
+    OCD _||_ infc | fc_m, sntz
+    OCD _||_ infc | crn_, sntz
     crn_ _||_ grm_ | fc_m, sntz
-    
-    crn_ _||_ infc_ | grm_
-    *If we stratify by G, there is no association between CF and Infection*
-
-    crn_ _||_ infc_ | fc_m, sntz
-    *OBS*
-
-    fc_m _||_ infc_ | grm_
-    *OBS*
-
+    crn_ _||_ infc | grm_
+    crn_ _||_ infc | fc_m, sntz
+    fc_m _||_ infc | grm_
     fc_m _||_ sntz | crn_
-    *OBS*
-
-    infc_ _||_ sntz | grm_
-    *OBS*
-
-
+    infc _||_ sntz | grm_
+   
+   
 OBS: WE NEED TO EXPLAIN HERE. Chris said the following in the lecture of
 week 5: "there are a lot of implications of a DAG. There are different
 ways to test its implication. Use \*dagitty\* to get a list of testable
@@ -278,13 +256,15 @@ continuous --\> bernomial (you translate to probability)
 
 ########################################################################################## 
 
+
+
 \- Find the full list of **Markov equivalent** DAGS. Use daggity's
 function `equivalentGraphs()`.
 
 The equivalentGraphs() function outputs a set of DAGs with the same
 conditional independencies is known as a Markov equivalence set.
 
-The list outputted allow show us 3 DAGS that would have the exact same
+The list outputted allow show us 8 DAGS that would have the exact same
 conditional independencies as our dag_corona has.
 
 ```{r}
@@ -301,16 +281,6 @@ this. A simple way is just to sample one variable from a normal
 distribution which has another variable as mean. McElreath does this in
 the book a few times, and you can use this as inspiration.
 
-*Corona Fear* Normal
-
-*Face Mask* Binomial
-
-*Sanitizing* Poisson
-
-*Germ Level* Normal
-
-*Infected* Binomial
-
 ```{r}
 set.seed(1)
 N= 10000
@@ -318,18 +288,17 @@ N= 10000
 # Simulating variables:
 
 # OCD
-OCD_w <- sample(1:5, size=N, replace=TRUE, prob=c(.8, .10, .05, .03, .02))
+OCD <- sample(1:5, size=N, replace=TRUE, prob=c(.8, .10, .05, .03, .02))
 
-# Corona fear (assuming that it is normally distributed)
-corona_fear <-rnorm(N, mean=50+(0.05*OCD_w), sd=10) 
+# Corona fear (assuming that it is normally distributed and dependent on OCD)
+corona_fear <-rnorm(N, mean=40+(5*OCD), sd=10) 
 
 # Face mask (is dependent on corona_fear)
 face_mask <- rbinom(N, size =1, prob=inv_logit(scale(corona_fear)))
 plot(corona_fear, inv_logit(scale(corona_fear)), main= "Sigmoid plot: probability of wearing a face mask given corona fear")
 
-# Sanitizing (is dependent on corona_feat)
-sanitizing <-  rnorm(N, mean= (corona_fear-20)+(OCD_w*1.2), sd=2) # OCD
-
+# Sanitizing (is dependent on corona_fear and OCD)
+sanitizing <-  rnorm(N, mean= (corona_fear-9)+(OCD_w*1.2), sd=2)
 
 # Germ level (is dependent on both sanitizing & whether you wear face mask or not)
 germ_level <-  rnorm(N, mean= 5000 - ((sanitizing*10)*(1+face_mask)), sd=100)
@@ -339,18 +308,22 @@ infected <-  rbinom(N, size= 1, prob= inv_logit(scale(germ_level)))
 plot(germ_level, inv_logit(scale(germ_level)), main= "Sigmoid plot: probability of being infected given germ level")
 
 # creating df
-df <- tibble(germ_level, sanitizing, infected, face_mask, corona_fear) 
+df <- tibble(germ_level, sanitizing, infected, face_mask, corona_fear, OCD) 
 ```
 
 *Standardizing variables*
-Standardizing variables: OBS CHRIS: SHOULD WE STANDARDIZE A DICHOTOMOUS VARIABLE, FM? 
+Standardizing variables: OBS CHRIS: SHOULD WE STANDARDIZE A DICHOTOMOUS VARIABLE, FM AND OCD!!!!!! 
 ```{r}
-
 df <- df %>% 
-  mutate(germ_std=scale(germ_level),sanitizing_std= scale(sanitizing),  infected_std=scale(infected),face_mask_std=scale(face_mask), corona_fear_std= scale(corona_fear))
-
-#ls.str(df)
+  mutate(germ_std=scale(germ_level),
+         sanitizing_std= scale(sanitizing),
+         infected_std=scale(infected),
+         face_mask_std=scale(face_mask),
+         corona_fear_std= scale(corona_fear),
+         OCD_std= scale(OCD))
 ```
+
+
 
 ## Task 3: Statistics
 \- Run **multiple linear regression**s to **test the conditional
@@ -477,48 +450,165 @@ plot(coeftab(m6),by.model=TRUE)
 ```
 As seen in the above plot, bSanitizing becomes independent from infection (i.e., the model does with almost no uncertainty estimate the coefficient bInfected to be very close to zero) when stratifying by germ level.
 
+(OBS) need to explain
+
+Model 7: OCD _||_ fc_m | crn_
+```{r}
+m7 <- quap(
+    alist(
+        OCD_std ~ dnorm( mu , sigma ) ,
+        mu <- a + bFaceMask*face_mask_std + bCoronaFear*corona_fear_std,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bCoronaFear ~ dnorm( 0 , 0.5 ) ,
+        bFaceMask ~ dnorm( 0 , 0.5 ) ,
+        sigma ~ dexp( 1 ) # OBS : why exp? It doesn't change anything changing it to dnorm or dunif
+    ) , data = df )
+
+plot(coeftab(m7),by.model=TRUE)
+
+```
+(OBS) need to explain
+
+
+Model 8: OCD _||_ grm_ | fc_m, sntz (OBS, not working)
+```{r}
+m8 <- quap(
+    alist(
+        OCD_std ~ dnorm( mu , sigma ) ,
+        mu <- a + bGermLevel*germ_std + bFaceMask*face_mask_std + bSanitize*sanitizing_std ,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bGermLevel ~ dnorm( 0 , 1 ) ,
+        bFaceMask ~ dnorm( 0 , 1 ) ,
+        bSanitize ~ dnorm( 0 , 1 ) ,
+        sigma ~ dexp( 1 ) # OBS : why exp? It doesn't change anything changing it to dnorm or dunif
+    ) , data = df )
+
+plot(coeftab(m8),by.model=TRUE)
+```
+(OBS) need to explain
+
+
+Model 9: OCD || grm_ | crn_, sntz
+```{r}
+m9<- quap(
+    alist(
+        OCD_std ~ dnorm( mu , sigma ) ,
+        mu <- a  + bGermLevel*germ_std + bCoronaFear*corona_fear_std + bSanitizing*sanitizing_std,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bGermLevel~ dnorm( 0 , 1 ) ,
+        bCoronaFear~ dnorm( 0 , 1 ),
+        bSanitizing ~ dnorm( 0 , 1 ),
+        sigma ~ dexp( 1 )
+    ) , data = df )
+
+plot(coeftab(m9),by.model=TRUE)
+```
+(OBS) need to explain
+
+
+Model 10: OCD || infc | grm_
+```{r}
+m10<- quap(
+    alist(
+        OCD_std ~ dnorm( mu , sigma ) ,
+        mu <- a  + bInfected*infected_std + bGermLevel*germ_std,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bInfected ~ dnorm( 0 , 1 ),
+        bGermLevel~ dnorm( 0 , 1 ) ,
+        sigma ~ dexp( 1 )
+    ) , data = df )
+
+plot(coeftab(m10),by.model=TRUE)
+```
+(OBS) need to explain
+
+
+
+Model 11: OCD _||_ infc | fc_m, sntz
+```{r}
+m11 <-  quap(
+    alist(
+        OCD_std ~ dnorm( mu , sigma ) ,
+        mu <- a + bInfected*infected_std  + bFace_mask*face_mask_std + bSanitizing*sanitizing_std,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bInfected~ dnorm( 0 , 1 ) ,
+        bFace_mask~ dnorm( 0 , 1 ),
+        bSanitizing~ dnorm( 0 , 1 ),
+        sigma ~ dexp( 1 )
+    ) , data = df )
+
+plot(coeftab(m11),by.model=TRUE)
+```
+(OBS) need to explain
+
+
+Model 12: OCD _||_ infc | crn_, sntz 
+```{r}
+m12<- quap(
+    alist(
+        OCD_std ~ dnorm( mu , sigma ) ,
+        mu <- a + bInfected*infected_std  + bCorona_fear*corona_fear_std + bSanitizing*sanitizing_std,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bInfected~ dnorm( 0 , 1 ) ,
+        bCorona_fear~ dnorm( 0 , 1 ),
+        bSanitizing~ dnorm( 0 , 1 ),
+        sigma ~ dexp( 1 )
+    ) , data = df )
+
+plot(coeftab(m12),by.model=TRUE)
+```
+
+(OBS) need to explain
+
+
 
 
 ## Task 4: Messing it up
 
 \- Try and **deliberately have an open back door path** and see if you can get wrong inference.
 
-We now create a DAG that has the variable OCD as backdoor that directly influences both corona fear and sanitizing. We expect a person with severe OCD sanitize more often (independently of corona fear), but also to fear corona more, which then has a direct influence on sanitizing as well. 
+*Comparing the two models*
+*We get wrong inference if we dont include OCD in our model*
+*Not including OCD in the model results in a different estimate of the level of corona fear's influence on the chance of whether you get infected or not, that is zero influence of corona fear on influence.*
+*Contrarily, including OCD in the model and thus closing the backdoor, results in an estimate of a negative relationship between level of corona fear and the chance of getting infected.*
 
+
+OBS comment
 ```{r}
-
-# Twisted DAG corona
-twisted_dag_corona <- dagitty( "dag {
-    corona_fear -> sanitizing
-    sanitizing-> germ_level
-    OCD -> sanitizing
-    OCD -> corona_fear
-    face_mask -> germ_level
-    corona_fear -> face_mask
-    germ_level -> infected
-}")
-
-# Plotting the DAG
-coordinates(twisted_dag_corona) <- list( 
-  x=c(corona_fear =0, OCD = .3, face_mask =-.5, sanitizing =0, germ_level=-.5, infected= -.5) , 
-  y=c(corona_fear =0, OCD = .5, face_mask =0, sanitizing = 1, germ_level=1, infected=2) )
-
-drawdag(twisted_dag_corona)
-
-# Shutting the backdoor - analyzing the graph to block the backdoor
-adjustmentSets(twisted_dag_corona, exposure="corona_fear", outcome="infected")
+m_backdoor<- quap(
+    alist(
+        infected_std ~ dnorm( mu , sigma ) , # (OBS ask Chris about standardizing dichotomous variable)
+        mu <- a + bCorona_fear*corona_fear_std,
+        a ~ dnorm( 0 , 0.2 ) ,
+        bCorona_fear~ dnorm( 0 , 1 ),
+        sigma ~ dexp( 1 )
+    ) , data = df )
+plot(coeftab(m_backdoor),by.model=TRUE)
+precis(m_backdoor)
+precis(m_no_backdoor)
 ```
-Including OCD introduces an open backdoor path to infected. OCD is a confounded variable that may result in our model making wrong inferences.
-When introducing OCD in the DAG, OCD creates a confounding path going from OCD --> SAN --> GL --> INF. We want to block it in order to avoid any spurious correlation that prevents us from seeing the actual effect that corona_fear has on infection. 
 
-The path CF <- OCD -> sanitizing is a backdoor path because it enters corona fear with an arrow and also connects corona fear to sanitizing. This path is confounding.We can deconfound this model by stratifying by OCD. Since sanitizing and corona fear in the above dag share the common cause, OCD, we can separate them statistically by stratifying by their common cause, OCD.
+OBS comment
+```{r}
+m_no_backdoor<- quap(
+    alist(
+        infected_std ~ dnorm( mu , sigma ) , # (OBS ask Chris about standardizing dichotomous variable)
+        mu <- a + bCorona_fear*corona_fear_std + bOCD*OCD_std,# (OBS ask Chris about standardizing dichotomous variable)
+        a ~ dnorm( 0 , 0.2 ) ,
+        bCorona_fear~ dnorm( 0 , 1 ),
+        bOCD~ dnorm( 0 , 1 ),
+        sigma ~ dexp( 1 )
+    ) , data = df )
 
-OBS: JØRGEN. In this case, controlling for OCD ruins inference as it does not belong to the causal path from corona fear to corona infected. Why? Because if only the 2 path (as descibed above) existed and we decided to change CF it wouldn't affect INF. To account for this, we could isolate OCD (the confounder) by adding it to the model by conditioning on it. When conditioning, we're analyzing the values of the other variables for a given value of the conditioned variable. This would block the second path and thus allow for inclusion of OCD in the model. 
+plot(coeftab(m_no_backdoor),by.model=TRUE)
+```
 
 \- Try and deliberately **simulate some data that doesn't fit the DAG**,
 or **create a new DAG that doesn't fit the data**.
-```{r}
 
+
+*We will now simulate some sata that does not fit the DAG*
+```{r}
 # Corona fear (assuming that it is normally distributed)
 corona_fear_w <-rnorm(N, mean=50, sd=10)
 
@@ -542,203 +632,7 @@ OCD_w <- sample(1:5, size=N, replace=TRUE, prob=c(.8, .10, .05, .03, .02)) # 80%
 df_w <- tibble(germ_level_w, sanitizing_w, infected_w, face_mask_w, corona_fear_w, OCD_w) 
 ```
 
-### Standardizing variables: OBS CHRIS: SHOULD WE STANDARDIZE A DICHOTOMOUS VARIABLE, FM? 
-```{r}
-
-df_w <- df_w %>% 
-  mutate(germ_std_w=scale(germ_level_w),sanitizing_std_w= scale(sanitizing_w),  infected_std_w=scale(infected_w),face_mask_std_w=scale(face_mask_w), corona_fear_std_w= scale(corona_fear_w), OCD_std_w = scale(OCD_w))
-
-```
-
-### Implied conditional independencies
-```{r}
-
-impliedConditionalIndependencies(twisted_dag_corona)
-
-```
-
-OCD _||_ fc_m | crn_
-OCD _||_ grm_ | fc_m, sntz
-OCD _||_ grm_ | crn_, sntz
-OCD _||_ infc | grm_
-OCD _||_ infc | fc_m, sntz
-OCD _||_ infc | crn_, sntz
-
-\- Use the same approach as above to **show that the DAG is wrong** (by
-showing that conditional independencies don't exist in the data, for
-example)
-
-### Testing implied conditional independencies
-```{r}
-######### MODEL 1 wrong ################
-# OCD _||_ fc_m | crn_
-model1_w <- quap(
-    alist(
-        OCD_std_w ~ dnorm( mu , sigma ) ,
-        mu <- a + bFaceMask*face_mask_std_w + bCoronaFear*corona_fear_std_w,
-        a ~ dnorm( 0 , 0.2 ) ,
-        bCoronaFear ~ dnorm( 0 , 0.5 ) ,
-        bFaceMask ~ dnorm( 0 , 0.5 ) ,
-        sigma ~ dexp( 1 ) # OBS : why exp? It doesn't change anything changing it to dnorm or dunif
-    ) , data = df_w )
-
-precis( model1_w )
-
-plot(precis( model1_w ))
-
-######### MODEL 2 wrong ################
-# crn_ _||_ grm_ | fc_m, sntz
-# OCD _||_ grm_ | fc_m, sntz
-model2_w <- quap(
-    alist(
-        OCD_std_w ~ dnorm( mu , sigma ) ,
-        mu <- a + bGermLevel*germ_std_w + bFaceMask*face_mask_std_w + bSanitize*sanitizing_std_w ,
-        a ~ dnorm( 0 , 0.2 ) ,
-        bGermLevel ~ dnorm( 0 , 0.5 ) ,
-        bFaceMask ~ dnorm( 0 , 0.5 ) ,
-        bSanitize ~ dunif( 0 , 0.5 ) ,
-        sigma ~ dexp( 1 ) # OBS : why exp? It doesn't change anything changing it to dnorm or dunif
-    ) , data = df_w )
-
-precis( model2_w )
-
-plot(precis( model2_w ))
-
-#### MODEL 3
-#OCD || grm_ | crn_, sntz
-model3_w<- quap(
-    alist(
-        OCD_std_w ~ dnorm( mu , sigma ) ,
-        mu <- a  + bGermLevel*germ_std_w + bCoronaFear*corona_fear_std_w+ bSanitizing*sanitizing_std_w,
-        a ~ dnorm( 0 , 0.2 ) ,
-        bGermLevel~ dnorm( 0 , 1 ) ,
-        bCoronaFear~ dnorm( 0 , 1 ),
-        bSanitizing ~ dnorm( 0 , 1 ),
-        sigma ~ dexp( 1 )
-    ) , data = df_w )
-precis(model3_w)
-
-plot(coeftab(model3_w),by.model=TRUE )
-
-#### MODEL 4
-#OCD || infc | grm_
-model4_w<- quap(
-    alist(
-        OCD_std_w ~ dnorm( mu , sigma ) ,
-        mu <- a  + bInfected*infected_std_w + bGermLevel*germ_std_w,
-        a ~ dnorm( 0 , 0.2 ) ,
-        bInfected ~ dnorm( 0 , 1 ),
-        bGermLevel~ dnorm( 0 , 1 ) ,
-        sigma ~ dexp( 1 )
-    ) , data = df_w )
-
-precis(model4_w)
-plot(coeftab(model4_w),by.model=TRUE )
 
 
-#### MODEL 5
-# OCD _||_ infc | fc_m, sntz # 5
-
-model5_w<- quap(
-    alist(
-        OCD_std_w ~ dnorm( mu , sigma ) ,
-        mu <- a + bInfected*infected_std_w  + bFace_mask*face_mask_std_w + bSanitizing*sanitizing_std_w,
-        a ~ dnorm( 0 , 0.2 ) ,
-        bInfected~ dnorm( 0 , 1 ) ,
-        bFace_mask~ dnorm( 0 , 1 ),
-        bSanitizing~ dnorm( 0 , 1 ),
-        sigma ~ dexp( 1 )
-    ) , data = df_w )
-precis( model5_w)
-
-plot(precis(model5_w))
-
-#### MODEL 6
-# OCD _||_ infc | crn_, sntz # 6
-model6_w<- quap(
-    alist(
-        OCD_std_w ~ dnorm( mu , sigma ) ,
-        mu <- a + bInfected*infected_std_w  + bCorona_fear*corona_fear_std_w + bSanitizing*sanitizing_std_w,
-        a ~ dnorm( 0 , 0.2 ) ,
-        bInfected~ dnorm( 0 , 1 ) ,
-        bCorona_fear~ dnorm( 0 , 1 ),
-        bSanitizing~ dnorm( 0 , 1 ),
-        sigma ~ dexp( 1 )
-    ) , data = df_w )
-precis( model6_w)
-
-plot(precis(model6_w))
-```
-
-
-
-## Peter's perfectly optimal and extremely interesting example
-
-*In a galaxy far, far away...*
-
-*It is a period of civil wars in the galaxy. A brave alliance of
-underground freedom fighters has challenged the tyranny and oppression
-of the awesome GALACTIC EMPIRE.*
-
-*To crush the rebellion once and for all, the EMPIRE is constructing a
-sinister new battle station. Powerful enough to destroy an entire
-planet, its completion spells certain doom for the champions of
-freedom.*
-
-*The evil Emperor has figured out, however, that neither the battle
-station nor the Force can help him avoid that more solar systems join
-the rebellion. He has therefore hired a CogSci student to use causal
-modelling and multiple linear regressions to investigate how the
-activity of the Death Star and other factors affects the probability
-that a given solar system will join the rebellion (this allows him to
-more optimally suppress freedom in the Galaxy).*
-
-*You are that student.*
-
-We assume that the probability of a solar system joining the rebellion
-depends on\
-- how many rebellion sympathizers there is in the system (more rebels
--\> higher probability of joining the rebellion)\
-- how scared people are in the system (more scared -\> lower probability
-of joining the rebellion).
-
-How many rebellion sympathizers there is in a system depends on
-
-\- crime levels (less crime -\> less rebellion sympathizers)
-
-\- number of planets recently destroyed by the Death Star (more planets
-destroyed -\> more rebellion sympathizers)
-
-\- number of Jedis in the system (more Jedis -\> more rebellion
-sympathizers)
-
-How scared people are depends on
-
-\- whether or not the Death Star is nearby (nearby -\> more scared)
-
-\- how many jedis are in the system (more Jedis -\> less scared)
-
-\- how much time Darth Vader has spent in the system recently (more time
--\> more scared)
-
-Crime levels depend on
-
-\- number of planets recently destroyed by the Death Star (more planets
-destroyed -\> less crime)
-
-And so on....
-
-
-
-
-# References
-
-STPS, S. F. P. (2020, February 27). Første dansker er bekræftet smittet med COVID-19 (ny
-coronavirus)—Styrelsen for Patientsikkerhed. https://stps.dk/da/nyheder/2020/foerste-
-dansker-er-bekraeftet-smittet-med-covid-19-ny-coronavirus/
-
-
-Gozzi, N., Tizzani, M., Starnini, M., Ciulla, F., Paolotti, D., Panisson, A., & Perra, N. (2020). 
-Collective Response to Media Coverage of the COVID-19 Pandemic on Reddit and Wikipedia: Mixed-Methods Analysis. Journal of Medical Internet Research, 22(10), e21597. https://doi.org/10.2196/21597
 
 
