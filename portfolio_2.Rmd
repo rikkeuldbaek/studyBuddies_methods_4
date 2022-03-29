@@ -321,6 +321,7 @@ corona_fear <-rnorm(N, mean=50, sd=10)
 
 ##### FACE MASK
 face_mask <- rbinom(N, size =1, prob= inv_logit(scale(corona_fear)))
+plot(corona_fear, inv_logit(scale(corona_fear)), main= "Sigmoid plot: probability of wearing a face mask given corona fear")
 
 ##### SANITIZING
 sanitizing <-  rnorm(N, mean= corona_fear-20, sd=2)
@@ -329,8 +330,8 @@ sanitizing <-  rnorm(N, mean= corona_fear-20, sd=2)
 germ_level <-  rnorm(N, mean= 5000 - ((sanitizing*10)*(1+face_mask)), sd=100)
 
 ##### INFECTED
-infected <-  rbinom(N, size= 1, prob= inv_logit(scale(germ_level))) #probability??? # (OBS)
-
+infected <-  rbinom(N, size= 1, prob= inv_logit(scale(germ_level)))
+plot(germ_level, inv_logit(scale(germ_level)), main= "Sigmoid plot: probability of being infected given germ level")
 
 # creating df
 df <- tibble(germ_level, sanitizing, infected, face_mask, corona_fear) 
